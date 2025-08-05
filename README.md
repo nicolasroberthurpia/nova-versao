@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dashboard Metalom
 
-## Getting Started
+Sistema de gestão empresarial desenvolvido com Next.js 15, focado na gestão de produtos e tarefas.
 
-First, run the development server:
+## 🚀 Funcionalidades
+
+### ✅ Implementadas
+- **Dashboard Principal**: Interface clean e moderna
+- **Gestão de Produtos**: 
+  - Lista de produtos com status e categorias
+  - Modal de cadastro com navegação por abas
+  - Sistema de status com ícones (Concluído, Pendente, Atrasado)
+  - Tags de categoria harmonizadas
+- **Sidebar de Navegação**: Menu lateral com ícones Lucide
+- **Sistema de Autenticação**: Página de login
+
+### 🚧 Em Desenvolvimento
+- **Abas do Cadastro**: Medidas, Embalagem e Dados
+- **Gestão de Tarefas**: Sistema completo de tasks
+- **Persistência de Dados**: Integração com banco de dados
+
+## 🛠️ Tecnologias
+
+- **Framework**: Next.js 15 (App Router)
+- **Frontend**: React 18, TypeScript
+- **Styling**: Tailwind CSS
+- **Ícones**: Lucide React, Material Symbols
+- **Fontes**: Inter (Google Fonts)
+
+## 🎨 Design System
+
+### Tipografia
+- **Títulos**: 24px (font-bold)
+- **Items**: 16px (font-medium) 
+- **Labels**: 14px (font-medium)
+- **Metadata**: 13px (font-normal)
+- **Headers**: 12px (font-medium)
+
+### Cores
+- **Primária**: #111827 (preto suave)
+- **Secundária**: #6B7280 (cinza médio)
+- **Placeholders**: #6B7280
+- **Status**: Verde (#28a745), Laranja (#fd7e14), Vermelho (#dc3545)
+
+### Espaçamento
+- **Grid**: Múltiplos de 8px
+- **Inputs**: 40px altura, 6px border-radius
+- **Tags**: 20px altura (h-5)
+
+## 🚀 Como Executar
 
 ```bash
+# Instalar dependências
+npm install
+
+# Executar em desenvolvimento
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build para produção
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📁 Estrutura do Projeto
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+├── app/
+│   ├── layout.tsx          # Layout principal com sidebar
+│   ├── page.tsx            # Dashboard principal
+│   ├── login/page.tsx      # Página de autenticação
+│   ├── produtos/page.tsx   # Gestão de produtos
+│   └── tarefas/page.tsx    # Gestão de tarefas
+├── components/
+│   ├── Sidebar.tsx         # Menu lateral de navegação
+│   └── StatusBadge.tsx     # Componente de status (deprecated)
+└── styles/
+    └── globals.css         # Estilos globais
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🔄 Navegação do Modal
 
-## Learn More
+O sistema de cadastro de produtos possui navegação intuitiva:
+- **Clique normal**: Avança para próxima aba
+- **Clique direito**: Abre menu para selecionar qualquer aba
+- **Última aba**: Exibe botão "Salvar Produto"
 
-To learn more about Next.js, take a look at the following resources:
+## 📝 Status do Projeto
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Versão Atual**: 1.0.0  
+**Última Atualização**: Janeiro 2025  
+**Status**: Em desenvolvimento ativo
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Desenvolvido por **Nicolas** - Sistema de gestão moderno e intuitivo para empresas.
