@@ -1,7 +1,7 @@
 "use client";
 // Necessário para usar useState neste componente de página
 import { useState, useEffect } from "react";
-import { CheckCircle2, AlertTriangle, Circle, ChevronDown, ChevronRight, FileText, Maximize, Box, Settings, Package, Trash2, Lightbulb } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Circle, ChevronDown, ChevronRight, FileText, Maximize, Box, Settings, Package, Trash2 } from 'lucide-react';
 
 // Mock de produtos com SKU, peso e preço para preview
 const produtos = [
@@ -45,7 +45,19 @@ export default function ProdutosPage() {
   
   // Estados para controlar qual campo está ativo para mostrar a lâmpada
   const [activeField, setActiveField] = useState<string | null>(null);
-  const [lampHoverField, setLampHoverField] = useState<string | null>(null);
+  
+  // Estados para sistema de proteção de clique
+  const [fieldProtection, setFieldProtection] = useState<{
+    protected: boolean;
+    fieldName: string | null;
+    hasContent: boolean;
+    timer: NodeJS.Timeout | null;
+  }>({
+    protected: false,
+    fieldName: null,
+    hasContent: false,
+    timer: null
+  });
   
   // Estados para os campos do formulário
   const [formData, setFormData] = useState({
@@ -119,60 +131,111 @@ export default function ProdutosPage() {
     }));
   };
 
-  // Componente para mostrar ícone de lâmpada quando o campo está ativo
-  const LightBulbIndicator = ({ fieldName }: { fieldName: string }) => {
-    const hasReminder = (fieldReminders[fieldName]?.reminders?.length || 0) > 0;
-    const hasInfo = fieldReminders[fieldName]?.info?.length > 0;
-    const isActive = activeField === fieldName || lampHoverField === fieldName;
-    
-    if (!isActive) return null;
-    
-    const handleClick = (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setViewModal({ open: true, field: fieldName });
-      setActiveField(null); // Limpa o campo ativo após clicar
-      setLampHoverField(null);
-    };
-
-    const handleMouseEnter = () => {
-      setLampHoverField(fieldName);
-    };
-
-    const handleMouseLeave = () => {
-      // Só remove se não for o campo ativo
-      if (activeField !== fieldName) {
-        setLampHoverField(null);
-      }
-    };
-
-    // Define a cor do ícone baseado na presença de lembretes
-    const iconColor = hasReminder || hasInfo 
-      ? 'text-yellow-500 hover:text-yellow-600' 
-      : 'text-gray-400 hover:text-gray-500';
-    
-    return (
-      <button 
-        className={`ml-1.5 p-0.5 transition-all duration-200 ${iconColor}`}
-        title={hasReminder || hasInfo ? 'Ver lembretes e informações' : 'Criar lembrete'}
-        onClick={handleClick}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        type="button"
-      >
-        <Lightbulb className="w-4 h-4" />
-      </button>
-    );
+  // Componente para mostrar dicas da aba quando clicado no ícone
+  const handleTabIconClick = (tabName: string) => {
+    // Abre modal com informações da aba específica
+    setViewModal({ open: true, field: `tab_${tabName}` });
+    setModalTab('lembretes'); // Sempre abre na aba de lembretes
   };
+
+  // Função para verificar se uma aba tem conteúdo de lembretes
+  const getTabContentStatus = (tabName: string) => {
+    // Verifica se a aba específica tem lembretes ou informações
+    const tabFieldKey = `tab_${tabName}`;
+    const tabData = fieldReminders[tabFieldKey];
+    return (tabData?.reminders?.length || 0) > 0 || (tabData?.info?.length || 0) > 0;
+  };
+
+
 
   // Função para lidar com o blur de forma inteligente
   const handleFieldBlur = (fieldName: string) => {
     // Pequeno delay para permitir clique na lâmpada
     setTimeout(() => {
-      if (lampHoverField !== fieldName) {
-        setActiveField(null);
-      }
+      setActiveField(null);
     }, 150);
+  };
+
+  // Sistema de proteção contra cliques acidentais
+  const handleFieldFocus = (fieldName: string) => {
+    // Limpa timer anterior se existir
+    if (fieldProtection.timer) {
+      clearTimeout(fieldProtection.timer);
+    }
+    
+    setActiveField(fieldName);
+    setFieldProtection({
+      protected: true,
+      fieldName,
+      hasContent: false,
+      timer: null
+    });
+  };
+
+  const handleProtectedBlur = (fieldName: string) => {
+    const currentFieldValue = formData[fieldName as keyof typeof formData] || '';
+    const hasContent = currentFieldValue.trim().length > 0;
+    
+    // Se não tem conteúdo, permite sair imediatamente
+    if (!hasContent) {
+      // Delay para verificar se é a lâmpada sendo clicada
+      setTimeout(() => {
+        setActiveField(null);
+        setFieldProtection({
+          protected: false,
+          fieldName: null,
+          hasContent: false,
+          timer: null
+        });
+      }, 50);
+      return;
+    }
+    
+    // Se tem conteúdo, adiciona um delay de proteção
+    const timer = setTimeout(() => {
+      // Verifica se o usuário não voltou ao campo
+      const isFocusOnInput = document.activeElement?.matches(`input, textarea`);
+      
+      if (fieldProtection.fieldName === fieldName && !isFocusOnInput) {
+        setActiveField(null);
+        setFieldProtection({
+          protected: false,
+          fieldName: null,
+          hasContent: false,
+          timer: null
+        });
+      }
+    }, 300); // 300ms de proteção
+    
+    setFieldProtection(prev => ({
+      ...prev,
+      timer
+    }));
+  };
+
+  const handleProtectedClick = (fieldName: string) => {
+    // Se clicou no campo protegido, cancela o timer
+    if (fieldProtection.fieldName === fieldName && fieldProtection.timer) {
+      clearTimeout(fieldProtection.timer);
+      setFieldProtection(prev => ({
+        ...prev,
+        timer: null
+      }));
+    }
+  };
+
+  // Função para forçar saída do campo (para botões de ação)
+  const forceFieldExit = () => {
+    if (fieldProtection.timer) {
+      clearTimeout(fieldProtection.timer);
+    }
+    setActiveField(null);
+    setFieldProtection({
+      protected: false,
+      fieldName: null,
+      hasContent: false,
+      timer: null
+    });
   };
 
   // Estado para componentes
@@ -340,28 +403,44 @@ export default function ProdutosPage() {
   // Função para lidar com mudanças nos campos
   const handleFieldChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Atualiza se o campo tem conteúdo para proteção
+    if (fieldProtection.fieldName === field) {
+      setFieldProtection(prev => ({
+        ...prev,
+        hasContent: value.trim().length > 0
+      }));
+    }
   };
 
   // Função para obter classes CSS baseadas no valor
-  const getFieldClasses = (value: string) => {
+  const getFieldClasses = (value: string, fieldName?: string) => {
     const baseClasses = "w-full h-[40px] px-3 border rounded-[6px] text-[14px] font-normal transition-all duration-200";
     
+    // Adiciona borda azul se o campo está protegido
+    const isProtected = fieldProtection.protected && fieldProtection.fieldName === fieldName;
+    const protectedClasses = isProtected ? "ring-2 ring-blue-200 border-blue-300" : "";
+    
     if (isNotApplicable(value)) {
-      return `${baseClasses} bg-gray-100 text-gray-500 border-gray-200 placeholder-gray-400`;
+      return `${baseClasses} bg-gray-100 text-gray-500 border-gray-200 placeholder-gray-400 ${protectedClasses}`;
     }
     
-    return `${baseClasses} border-gray-300 placeholder-[#6B7280]`;
+    return `${baseClasses} border-gray-300 placeholder-[#6B7280] ${protectedClasses}`;
   };
 
   // Função para obter classes CSS para textarea
-  const getTextareaClasses = (value: string) => {
+  const getTextareaClasses = (value: string, fieldName?: string) => {
     const baseClasses = "w-full min-h-[100px] px-3 py-2 border rounded-[6px] text-[14px] font-normal transition-all duration-200";
     
+    // Adiciona borda azul se o campo está protegido
+    const isProtected = fieldProtection.protected && fieldProtection.fieldName === fieldName;
+    const protectedClasses = isProtected ? "ring-2 ring-blue-200 border-blue-300" : "";
+    
     if (isNotApplicable(value)) {
-      return `${baseClasses} bg-gray-100 text-gray-500 border-gray-200 placeholder-gray-400`;
+      return `${baseClasses} bg-gray-100 text-gray-500 border-gray-200 placeholder-gray-400 ${protectedClasses}`;
     }
     
-    return `${baseClasses} border-gray-300 placeholder-[#6B7280]`;
+    return `${baseClasses} border-gray-300 placeholder-[#6B7280] ${protectedClasses}`;
   };
 
   const [modalTab, setModalTab] = useState<'lembretes'|'info'>('lembretes');
@@ -369,6 +448,15 @@ export default function ProdutosPage() {
   useEffect(() => {
     if (viewModal.open) setModalTab('lembretes');
   }, [viewModal.open]);
+
+  // Cleanup para timers de proteção
+  useEffect(() => {
+    return () => {
+      if (fieldProtection.timer) {
+        clearTimeout(fieldProtection.timer);
+      }
+    };
+  }, [fieldProtection.timer]);
 
   return (
     <div className="flex flex-col h-full min-h-[calc(100vh-0rem)] relative px-10">
@@ -445,10 +533,22 @@ export default function ProdutosPage() {
                     {(() => {
                       const currentConfig = tabsConfig[activeTab];
                       const IconComponent = currentConfig.icon;
+                      const hasContent = getTabContentStatus(activeTab);
+                      
                       return (
                         <>
-                          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-50 shadow-sm">
-                            <IconComponent className="w-5 h-5 text-gray-600" />
+                          <div className="relative">
+                            <button 
+                              onClick={() => handleTabIconClick(activeTab)}
+                              className="flex items-center justify-center w-10 h-10 rounded-lg shadow-sm transition-all duration-200 bg-gray-50 border-2 border-transparent hover:bg-gray-100 hover:border-gray-200"
+                              title={hasContent ? 'Ver dicas e lembretes desta aba' : 'Adicionar dicas para esta aba'}
+                              type="button"
+                            >
+                              <IconComponent className="w-5 h-5 text-gray-600" />
+                            </button>
+                            {hasContent && (
+                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border-2 border-white shadow-sm"></div>
+                            )}
                           </div>
                           <div className="flex-1">
                             <h3 className="text-[18px] font-semibold text-gray-800 mb-1 leading-snug">
@@ -465,7 +565,10 @@ export default function ProdutosPage() {
                   
                   {/* Botão fechar discreto */}
                   <button 
-                    onClick={() => setModalOpen(false)} 
+                    onClick={() => {
+                      forceFieldExit();
+                      setModalOpen(false);
+                    }} 
                     aria-label="Fechar" 
                     className="p-1 transition-colors opacity-60 hover:opacity-100"
                   >
@@ -482,20 +585,18 @@ export default function ProdutosPage() {
                   <form className="grid grid-cols-12 gap-x-6 gap-y-5 animate-in fade-in duration-300">
                     {/* Nome do produto */}
                     <div className="col-span-12">
-                      <div className="flex items-center">
-                        <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
-                          Nome do produto
-                        </label>
-                        <LightBulbIndicator fieldName="nome" />
-                      </div>
+                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
+                        Nome do produto
+                      </label>
                       <input 
                         type="text" 
                         placeholder="Ex: Camiseta Básica" 
                         value={formData.nome}
                         onChange={(e) => handleFieldChange('nome', e.target.value)}
-                        className={getFieldClasses(formData.nome)}
-                        onFocus={() => setActiveField('nome')}
-                        onBlur={() => handleFieldBlur('nome')}
+                        className={getFieldClasses(formData.nome, 'nome')}
+                        onFocus={() => handleFieldFocus('nome')}
+                        onBlur={() => handleProtectedBlur('nome')}
+                        onClick={() => handleProtectedClick('nome')}
                       />
                       {isNotApplicable(formData.nome) && (
                         <span className="text-[12px] text-gray-500 mt-1 block">Campo marcado como não aplicável</span>
@@ -503,19 +604,17 @@ export default function ProdutosPage() {
                     </div>
                     {/* Descrição */}
                     <div className="col-span-12">
-                      <div className="flex items-center">
-                        <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
-                          Descrição
-                        </label>
-                        <LightBulbIndicator fieldName="descricao" />
-                      </div>
+                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
+                        Descrição
+                      </label>
                       <textarea 
                         placeholder="Descreva os detalhes do produto..." 
                         value={formData.descricao}
                         onChange={(e) => handleFieldChange('descricao', e.target.value)}
-                        className={getTextareaClasses(formData.descricao)}
-                        onFocus={() => setActiveField('descricao')}
-                        onBlur={() => handleFieldBlur('descricao')}
+                        className={getTextareaClasses(formData.descricao, 'descricao')}
+                        onFocus={() => handleFieldFocus('descricao')}
+                        onBlur={() => handleProtectedBlur('descricao')}
+                        onClick={() => handleProtectedClick('descricao')}
                       />
                       {isNotApplicable(formData.descricao) && (
                         <span className="text-[12px] text-gray-500 mt-1 block">Campo marcado como não aplicável</span>
@@ -523,20 +622,18 @@ export default function ProdutosPage() {
                     </div>
                     {/* SKU */}
                     <div className="col-span-6">
-                      <div className="flex items-center">
-                        <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
-                          SKU
-                        </label>
-                        <LightBulbIndicator fieldName="sku" />
-                      </div>
+                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
+                        SKU
+                      </label>
                       <input 
                         type="text" 
                         placeholder="Ex: TSHIRT-001" 
                         value={formData.sku}
                         onChange={(e) => handleFieldChange('sku', e.target.value)}
-                        className={getFieldClasses(formData.sku)}
-                        onFocus={() => setActiveField('sku')}
-                        onBlur={() => handleFieldBlur('sku')}
+                        className={getFieldClasses(formData.sku, 'sku')}
+                        onFocus={() => handleFieldFocus('sku')}
+                        onBlur={() => handleProtectedBlur('sku')}
+                        onClick={() => handleProtectedClick('sku')}
                       />
                       {isNotApplicable(formData.sku) && (
                         <span className="text-[12px] text-gray-500 mt-1 block">Campo marcado como não aplicável</span>
@@ -544,20 +641,18 @@ export default function ProdutosPage() {
                     </div>
                     {/* Categoria */}
                     <div className="col-span-6">
-                      <div className="flex items-center">
-                        <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
-                          Categoria
-                        </label>
-                        <LightBulbIndicator fieldName="categoria" />
-                      </div>
+                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
+                        Categoria
+                      </label>
                       <input 
                         type="text" 
                         placeholder="Ex: Vestuário" 
                         value={formData.categoria}
                         onChange={(e) => handleFieldChange('categoria', e.target.value)}
-                        className={getFieldClasses(formData.categoria)}
-                        onFocus={() => setActiveField('categoria')}
-                        onBlur={() => handleFieldBlur('categoria')}
+                        className={getFieldClasses(formData.categoria, 'categoria')}
+                        onFocus={() => handleFieldFocus('categoria')}
+                        onBlur={() => handleProtectedBlur('categoria')}
+                        onClick={() => handleProtectedClick('categoria')}
                       />
                       {isNotApplicable(formData.categoria) && (
                         <span className="text-[12px] text-gray-500 mt-1 block">Campo marcado como não aplicável</span>
@@ -576,20 +671,17 @@ export default function ProdutosPage() {
                     
                     {/* Comprimento */}
                     <div className="col-span-4">
-                      <div className="flex items-center">
-                        <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
-                          Comprimento (cm)
-                        </label>
-                        <LightBulbIndicator fieldName="comprimento" />
-                      </div>
+                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
+                        Comprimento (cm)
+                      </label>
                       <input 
                         type="text" 
                         placeholder="0" 
                         value={formData.comprimento}
                         onChange={(e) => handleFieldChange('comprimento', e.target.value)}
                         className={getFieldClasses(formData.comprimento)}
-                        onFocus={() => setActiveField('comprimento')}
-                        onBlur={() => handleFieldBlur('comprimento')}
+                        onFocus={() => handleFieldFocus('comprimento')}
+                        onBlur={() => handleProtectedBlur('comprimento')}
                       />
                       {isNotApplicable(formData.comprimento) && (
                         <span className="text-[12px] text-gray-500 mt-1 block">Campo marcado como não aplicável</span>
@@ -597,20 +689,17 @@ export default function ProdutosPage() {
                     </div>
                     {/* Altura */}
                     <div className="col-span-4">
-                      <div className="flex items-center">
-                        <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
-                          Altura (cm)
-                        </label>
-                        <LightBulbIndicator fieldName="altura" />
-                      </div>
+                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
+                        Altura (cm)
+                      </label>
                       <input 
                         type="text" 
                         placeholder="0" 
                         value={formData.altura}
                         onChange={(e) => handleFieldChange('altura', e.target.value)}
                         className={getFieldClasses(formData.altura)}
-                        onFocus={() => setActiveField('altura')}
-                        onBlur={() => handleFieldBlur('altura')}
+                        onFocus={() => handleFieldFocus('altura')}
+                        onBlur={() => handleProtectedBlur('altura')}
                       />
                       {isNotApplicable(formData.altura) && (
                         <span className="text-[12px] text-gray-500 mt-1 block">Campo marcado como não aplicável</span>
@@ -618,20 +707,17 @@ export default function ProdutosPage() {
                     </div>
                     {/* Largura */}
                     <div className="col-span-4">
-                      <div className="flex items-center">
-                        <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
-                          Largura (cm)
-                        </label>
-                        <LightBulbIndicator fieldName="largura" />
-                      </div>
+                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
+                        Largura (cm)
+                      </label>
                       <input 
                         type="text" 
                         placeholder="0" 
                         value={formData.largura}
                         onChange={(e) => handleFieldChange('largura', e.target.value)}
                         className={getFieldClasses(formData.largura)}
-                        onFocus={() => setActiveField('largura')}
-                        onBlur={() => handleFieldBlur('largura')}
+                        onFocus={() => handleFieldFocus('largura')}
+                        onBlur={() => handleProtectedBlur('largura')}
                       />
                       {isNotApplicable(formData.largura) && (
                         <span className="text-[12px] text-gray-500 mt-1 block">Campo marcado como não aplicável</span>
@@ -645,20 +731,17 @@ export default function ProdutosPage() {
                     
                     {/* Espessura do Ferro */}
                     <div className="col-span-6">
-                      <div className="flex items-center">
-                        <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
-                          Espessura do Ferro (mm)
-                        </label>
-                        <LightBulbIndicator fieldName="espessuraFerro" />
-                      </div>
+                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
+                        Espessura do Ferro (mm)
+                      </label>
                       <input 
                         type="text" 
                         placeholder="0.0" 
                         value={formData.espessuraFerro}
                         onChange={(e) => handleFieldChange('espessuraFerro', e.target.value)}
                         className={getFieldClasses(formData.espessuraFerro)}
-                        onFocus={() => setActiveField('espessuraFerro')}
-                        onBlur={() => handleFieldBlur('espessuraFerro')}
+                        onFocus={() => handleFieldFocus('espessuraFerro')}
+                        onBlur={() => handleProtectedBlur('espessuraFerro')}
                       />
                       {isNotApplicable(formData.espessuraFerro) && (
                         <span className="text-[12px] text-gray-500 mt-1 block">Campo marcado como não aplicável</span>
@@ -666,20 +749,17 @@ export default function ProdutosPage() {
                     </div>
                     {/* Espessura do MDF */}
                     <div className="col-span-6">
-                      <div className="flex items-center">
-                        <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
-                          Espessura do MDF (mm)
-                        </label>
-                        <LightBulbIndicator fieldName="espessuraMdf" />
-                      </div>
+                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
+                        Espessura do MDF (mm)
+                      </label>
                       <input 
                         type="text" 
                         placeholder="0.0" 
                         value={formData.espessuraMdf}
                         onChange={(e) => handleFieldChange('espessuraMdf', e.target.value)}
                         className={getFieldClasses(formData.espessuraMdf)}
-                        onFocus={() => setActiveField('espessuraMdf')}
-                        onBlur={() => handleFieldBlur('espessuraMdf')}
+                        onFocus={() => handleFieldFocus('espessuraMdf')}
+                        onBlur={() => handleProtectedBlur('espessuraMdf')}
                       />
                       {isNotApplicable(formData.espessuraMdf) && (
                         <span className="text-[12px] text-gray-500 mt-1 block">Campo marcado como não aplicável</span>
@@ -693,20 +773,17 @@ export default function ProdutosPage() {
                     
                     {/* Distância dos Nichos */}
                     <div className="col-span-6">
-                      <div className="flex items-center">
-                        <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
-                          Distância dos Nichos (cm)
-                        </label>
-                        <LightBulbIndicator fieldName="distanciaNichos" />
-                      </div>
+                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
+                        Distância dos Nichos (cm)
+                      </label>
                       <input 
                         type="text" 
                         placeholder="0" 
                         value={formData.distanciaNichos}
                         onChange={(e) => handleFieldChange('distanciaNichos', e.target.value)}
                         className={getFieldClasses(formData.distanciaNichos)}
-                        onFocus={() => setActiveField('distanciaNichos')}
-                        onBlur={() => handleFieldBlur('distanciaNichos')}
+                        onFocus={() => handleFieldFocus('distanciaNichos')}
+                        onBlur={() => handleProtectedBlur('distanciaNichos')}
                       />
                       {isNotApplicable(formData.distanciaNichos) && (
                         <span className="text-[12px] text-gray-500 mt-1 block">Campo marcado como não aplicável</span>
@@ -714,20 +791,17 @@ export default function ProdutosPage() {
                     </div>
                     {/* Distância dos Varões */}
                     <div className="col-span-6">
-                      <div className="flex items-center">
-                        <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
-                          Distância dos Varões (cm)
-                        </label>
-                        <LightBulbIndicator fieldName="distanciaVaroes" />
-                      </div>
+                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
+                        Distância dos Varões (cm)
+                      </label>
                       <input 
                         type="text" 
                         placeholder="0" 
                         value={formData.distanciaVaroes}
                         onChange={(e) => handleFieldChange('distanciaVaroes', e.target.value)}
                         className={getFieldClasses(formData.distanciaVaroes)}
-                        onFocus={() => setActiveField('distanciaVaroes')}
-                        onBlur={() => handleFieldBlur('distanciaVaroes')}
+                        onFocus={() => handleFieldFocus('distanciaVaroes')}
+                        onBlur={() => handleProtectedBlur('distanciaVaroes')}
                       />
                       {isNotApplicable(formData.distanciaVaroes) && (
                         <span className="text-[12px] text-gray-500 mt-1 block">Campo marcado como não aplicável</span>
@@ -933,37 +1007,31 @@ export default function ProdutosPage() {
                       <h4 className="text-[15px] font-semibold text-gray-800 mb-4">Links Padrão</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <div className="flex items-center">
-                            <label className="block text-[13px] font-medium text-gray-700 mb-1.5 cursor-pointer select-none">
-                              Google Drive
-                            </label>
-                            <LightBulbIndicator fieldName="driveLink" />
-                          </div>
+                          <label className="block text-[13px] font-medium text-gray-700 mb-1.5 cursor-pointer select-none">
+                            Google Drive
+                          </label>
                           <input
                             type="text"
                             placeholder="https://drive.google.com/..."
                             value={formData.driveLink}
                             onChange={(e) => handleFieldChange('driveLink', e.target.value)}
                             className={getFieldClasses(formData.driveLink)}
-                            onFocus={() => setActiveField('driveLink')}
-                            onBlur={() => handleFieldBlur('driveLink')}
+                            onFocus={() => handleFieldFocus('driveLink')}
+                            onBlur={() => handleProtectedBlur('driveLink')}
                           />
                         </div>
                         <div>
-                          <div className="flex items-center">
-                            <label className="block text-[13px] font-medium text-gray-700 mb-1.5 cursor-pointer select-none">
-                              Olist
-                            </label>
-                            <LightBulbIndicator fieldName="olistLink" />
-                          </div>
+                          <label className="block text-[13px] font-medium text-gray-700 mb-1.5 cursor-pointer select-none">
+                            Olist
+                          </label>
                           <input
                             type="text"
                             placeholder="https://olist.com/..."
                             value={formData.olistLink}
                             onChange={(e) => handleFieldChange('olistLink', e.target.value)}
                             className={getFieldClasses(formData.olistLink)}
-                            onFocus={() => setActiveField('olistLink')}
-                            onBlur={() => handleFieldBlur('olistLink')}
+                            onFocus={() => handleFieldFocus('olistLink')}
+                            onBlur={() => handleProtectedBlur('olistLink')}
                           />
                         </div>
                       </div>
@@ -1018,19 +1086,16 @@ export default function ProdutosPage() {
 
                     {/* Card de Observação */}
                     <div className="col-span-12 p-5 bg-white rounded-lg border border-gray-200 shadow-sm">
-                      <div className="flex items-center">
-                        <h4 className="text-[15px] font-semibold text-gray-800 mb-3 cursor-pointer select-none">
-                          Observação
-                        </h4>
-                        <LightBulbIndicator fieldName="observacao" />
-                      </div>
+                      <h4 className="text-[15px] font-semibold text-gray-800 mb-3 cursor-pointer select-none">
+                        Observação
+                      </h4>
                       <textarea
                         placeholder="Deixe aqui suas observações..."
                         value={formData.observacao}
                         onChange={(e) => handleFieldChange('observacao', e.target.value)}
                         className={getTextareaClasses(formData.observacao)}
-                        onFocus={() => setActiveField('observacao')}
-                        onBlur={() => handleFieldBlur('observacao')}
+                        onFocus={() => handleFieldFocus('observacao')}
+                        onBlur={() => handleProtectedBlur('observacao')}
                       />
                     </div>
                   </form>
@@ -1157,16 +1222,35 @@ export default function ProdutosPage() {
       {viewModal.open && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40" onClick={(e) => e.target === e.currentTarget && setViewModal({ open: false, field: '' })}>
           <div className="bg-white rounded-xl shadow-lg w-[500px] max-h-[70vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <div>
-                <h3 className="text-[16px] font-semibold text-gray-800">
-                  Lembretes - {viewModal.field}
-                </h3>
-                <p className="text-[12px] text-gray-600">
-                  Gerencie lembretes e informações para este campo
-                </p>
+            {/* Header com X e abas alinhadas */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              {/* Tab Navigation */}
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setModalTab('lembretes')}
+                  className={`flex items-center gap-2 px-4 py-2 text-[14px] font-medium rounded-lg transition-all duration-200 ${
+                    modalTab === 'lembretes'
+                      ? 'bg-gray-100 text-gray-900 border border-gray-200'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-[18px]">lightbulb</span>
+                  Lembretes
+                </button>
+                <button
+                  onClick={() => setModalTab('info')}
+                  className={`flex items-center gap-2 px-4 py-2 text-[14px] font-medium rounded-lg transition-all duration-200 ${
+                    modalTab === 'info'
+                      ? 'bg-gray-100 text-gray-900 border border-gray-200'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-[18px]">info</span>
+                  Informações
+                </button>
               </div>
+              
+              {/* Botão fechar */}
               <button 
                 onClick={() => setViewModal({ open: false, field: '' })} 
                 className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -1177,61 +1261,85 @@ export default function ProdutosPage() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-4">
-                {/* Reminders Section */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-[14px] font-medium text-gray-800">Lembretes</h4>
-                    <button 
-                      onClick={() => openEditModal(viewModal.field, 'reminder')}
-                      className="text-[12px] text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      + Adicionar Lembrete
-                    </button>
-                  </div>
+              {modalTab === 'lembretes' && (
+                <div className="space-y-4">
+                  {/* Botão adicionar no topo */}
+                  <button 
+                    onClick={() => openEditModal(viewModal.field, 'reminder')}
+                    className="px-3 py-1.5 text-[13px] font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 hover:text-gray-700 transition-all"
+                  >
+                    Adicionar
+                  </button>
+                  
+                  {/* Lista de lembretes */}
                   {fieldReminders[viewModal.field]?.reminders?.length > 0 ? (
                     <div className="space-y-2">
                       {fieldReminders[viewModal.field].reminders.map((reminder, index) => (
-                        <div key={index} className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-[13px] text-amber-800">
+                        <div key={index} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-[13px] text-yellow-800 relative group">
                           {reminder}
+                          <button
+                            onClick={() => {
+                              setFieldReminders(prev => ({
+                                ...prev,
+                                [viewModal.field]: {
+                                  ...prev[viewModal.field],
+                                  reminders: prev[viewModal.field]?.reminders?.filter((_, i) => i !== index) || []
+                                }
+                              }));
+                            }}
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-yellow-600 hover:text-yellow-800 transition-opacity"
+                            title="Remover lembrete"
+                          >
+                            <span className="material-symbols-rounded text-[16px]">close</span>
+                          </button>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[13px] text-gray-500 italic">Nenhum lembrete adicionado</p>
+                    <div className="text-center py-8">
+                      <p className="text-[13px] text-gray-500 italic">Nenhum lembrete adicionado</p>
+                    </div>
                   )}
                 </div>
+              )}
 
-                {/* Info Section */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-[14px] font-medium text-gray-800">Informações</h4>
-                    <button 
-                      onClick={() => openEditModal(viewModal.field, 'info')}
-                      className="text-[12px] text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      {fieldReminders[viewModal.field]?.info ? 'Editar' : '+ Adicionar Informação'}
-                    </button>
-                  </div>
+              {modalTab === 'info' && (
+                <div className="space-y-4">
+                  {/* Botão adicionar/editar no topo */}
+                  <button 
+                    onClick={() => openEditModal(viewModal.field, 'info')}
+                    className="px-3 py-1.5 text-[13px] font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 hover:text-gray-700 transition-all"
+                  >
+                    Adicionar
+                  </button>
+                  
+                  {/* Informação */}
                   {fieldReminders[viewModal.field]?.info ? (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-[13px] text-blue-800">
-                      {fieldReminders[viewModal.field].info}
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-800 relative group">
+                      <div className="whitespace-pre-wrap">{fieldReminders[viewModal.field].info}</div>
+                      <button
+                        onClick={() => {
+                          setFieldReminders(prev => ({
+                            ...prev,
+                            [viewModal.field]: {
+                              ...prev[viewModal.field],
+                              info: ''
+                            }
+                          }));
+                        }}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-600 hover:text-gray-800 transition-opacity"
+                        title="Remover informação"
+                      >
+                        <span className="material-symbols-rounded text-[16px]">close</span>
+                      </button>
                     </div>
                   ) : (
-                    <p className="text-[13px] text-gray-500 italic">Nenhuma informação adicionada</p>
+                    <div className="text-center py-8">
+                      <p className="text-[13px] text-gray-500 italic">Nenhuma informação adicionada</p>
+                    </div>
                   )}
                 </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-              <button 
-                onClick={() => setViewModal({ open: false, field: '' })}
-                className="px-4 py-2 text-[14px] font-medium text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Fechar
-              </button>
+              )}
             </div>
           </div>
         </div>
@@ -1245,10 +1353,17 @@ export default function ProdutosPage() {
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
                 <h3 className="text-[16px] font-semibold text-gray-800">
-                  {editModal.type === 'reminder' ? 'Lembrete' : 'Informações'} - {editModal.field}
+                  {editModal.type === 'reminder' ? 'Lembrete' : 'Informações'} - {
+                    editModal.field.startsWith('tab_') 
+                      ? editModal.field.replace('tab_', '')
+                      : editModal.field
+                  }
                 </h3>
                 <p className="text-[12px] text-gray-600">
-                  {editModal.type === 'reminder' ? 'Adicione um lembrete para este campo' : 'Adicione informações sobre este campo'}
+                  {editModal.type === 'reminder' 
+                    ? (editModal.field.startsWith('tab_') ? 'Adicione um lembrete para esta aba' : 'Adicione um lembrete para este campo')
+                    : (editModal.field.startsWith('tab_') ? 'Adicione informações sobre esta aba' : 'Adicione informações sobre este campo')
+                  }
                 </p>
               </div>
               <button 
@@ -1265,7 +1380,7 @@ export default function ProdutosPage() {
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 placeholder={editModal.type === 'reminder' ? 'Digite o lembrete...' : 'Digite as informações...'}
-                className="w-full min-h-[200px] px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full min-h-[200px] px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-gray-400"
                 autoFocus
               />
             </div>
@@ -1274,13 +1389,13 @@ export default function ProdutosPage() {
             <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
               <button 
                 onClick={() => setEditModal({ open: false, field: '', type: 'reminder' })}
-                className="px-4 py-2 text-[14px] font-medium text-gray-600 hover:text-gray-800 transition-colors"
+                className="px-4 py-2 text-[14px] font-medium text-gray-600 hover:text-gray-800 transition-colors border border-gray-300 rounded-md hover:bg-gray-50"
               >
                 Cancelar
               </button>
               <button 
                 onClick={saveFieldData}
-                className="px-4 py-2 text-[14px] font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 text-[14px] font-medium bg-[#111827] text-white rounded-md hover:bg-black transition-colors"
               >
                 Salvar
               </button>
