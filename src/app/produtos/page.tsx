@@ -3,17 +3,119 @@
 import { useState, useEffect } from "react";
 import { CheckCircle2, AlertTriangle, Circle, ChevronDown, ChevronRight, FileText, Maximize, Box, Settings, Package, Trash2 } from 'lucide-react';
 
-// Mock de produtos com SKU, peso e preço para preview
+// Produtos completos cadastrados na plataforma
 const produtos = [
-  { id: 1, sku: "A1001", nome: "Chapa de Aço Galvanizado", categoria: "Matéria-prima", peso: 2.45, preco: 85.90 },
-  { id: 2, sku: "B2002", nome: "Parafuso Sextavado M10", categoria: "Fixação", peso: 0.025, preco: 1.50 },
-  { id: 3, sku: "C3003", nome: "Tubo Quadrado 50x50", categoria: "Estrutural", peso: 5.80, preco: 42.75 },
-  { id: 4, sku: "D4004", nome: "Porca Sextavada M10", categoria: "Fixação", peso: 0.015, preco: 0.85 },
-  { id: 5, sku: "E5005", nome: "Chapa MDF 15mm", categoria: "Acabamento", peso: 8.20, preco: 65.00 },
-  { id: 6, sku: "F6006", nome: "Solda Eletrodo 3,25mm", categoria: "Consumível", peso: 0.050, preco: 2.25 },
+  { 
+    id: 1, 
+    sku: "MESA-ESC-001", 
+    nome: "Mesa de Escritório Premium", 
+    categoria: "Móveis para Escritório", 
+    peso: 28.500, 
+    preco: 449.90,
+    descricao: "Mesa moderna com estrutura metálica e tampo em MDF, ideal para escritórios corporativos",
+    medidas: {
+      comprimento: 120,
+      altura: 75,
+      largura: 60,
+      espessuraFerro: 2.5,
+      espessuraMdf: 18,
+      distanciaNichos: 40,
+      distanciaVaroes: 25
+    },
+    componentes: [
+      { id: 1, nome: "Pés metálicos", quantidade: 4, peso: 3.200, valor: 28.50 },
+      { id: 2, nome: "Tampo MDF", quantidade: 1, peso: 18.500, valor: 125.00 },
+      { id: 3, nome: "Parafusos de fixação", quantidade: 16, peso: 0.320, valor: 12.80 },
+      { id: 4, nome: "Suportes laterais", quantidade: 2, peso: 6.480, valor: 45.60 }
+    ],
+    embalagens: [
+      { id: 1, comprimento: 125, altura: 10, largura: 65 },
+      { id: 2, comprimento: 80, altura: 15, largura: 15 }
+    ],
+    links: {
+      googleDrive: "https://drive.google.com/mesa-escritorio-premium",
+      olist: "https://olist.com/mesa-escritorio-001",
+      personalizados: [
+        { id: 1, nome: "Manual de Montagem", url: "https://manuais.metalom.com/mesa-001" }
+      ]
+    },
+    observacao: "Produto certificado para uso comercial. Peso máximo suportado: 50kg."
+  },
+  { 
+    id: 2, 
+    sku: "EST-IND-002", 
+    nome: "Estante Industrial Modular", 
+    categoria: "Estantes e Prateleiras", 
+    peso: 42.750, 
+    preco: 329.90,
+    descricao: "Estante com 5 prateleiras, estrutura em ferro com acabamento preto fosco",
+    medidas: {
+      comprimento: 80,
+      altura: 180,
+      largura: 35,
+      espessuraFerro: 3.0,
+      espessuraMdf: 15,
+      distanciaNichos: 35,
+      distanciaVaroes: 30
+    },
+    componentes: [
+      { id: 1, nome: "Montantes verticais", quantidade: 2, peso: 12.400, valor: 89.50 },
+      { id: 2, nome: "Prateleiras MDF", quantidade: 5, peso: 25.000, valor: 187.50 },
+      { id: 3, nome: "Suportes de prateleira", quantidade: 10, peso: 3.500, valor: 42.00 },
+      { id: 4, nome: "Parafusos estruturais", quantidade: 20, peso: 1.850, valor: 18.90 }
+    ],
+    embalagens: [
+      { id: 1, comprimento: 185, altura: 85, largura: 40 }
+    ],
+    links: {
+      googleDrive: "https://drive.google.com/estante-industrial-002",
+      olist: "https://olist.com/estante-modular-002",
+      personalizados: [
+        { id: 1, nome: "Catálogo de Cores", url: "https://cores.metalom.com/est-002" }
+      ]
+    },
+    observacao: "Disponível em 3 cores: preto, branco e cinza. Capacidade por prateleira: 25kg."
+  },
+  { 
+    id: 3, 
+    sku: "RACK-TV-003", 
+    nome: "Rack TV Suspenso", 
+    categoria: "Racks e Suportes", 
+    peso: 15.890, 
+    preco: 189.90,
+    descricao: "Rack para TV até 55\" com compartimentos para equipamentos, fixação na parede",
+    medidas: {
+      comprimento: 140,
+      altura: 45,
+      largura: 25,
+      espessuraFerro: 1.8,
+      espessuraMdf: 12,
+      distanciaNichos: 20,
+      distanciaVaroes: 15
+    },
+    componentes: [
+      { id: 1, nome: "Estrutura principal", quantidade: 1, peso: 8.500, valor: 95.00 },
+      { id: 2, nome: "Prateleiras internas", quantidade: 3, peso: 4.200, valor: 52.50 },
+      { id: 3, nome: "Suporte de fixação na parede", quantidade: 1, peso: 2.890, valor: 35.80 },
+      { id: 4, nome: "Kit de parafusos e buchas", quantidade: 1, peso: 0.250, valor: 8.90 },
+      { id: 5, nome: "Passador de cabos", quantidade: 2, peso: 0.050, valor: 3.20 }
+    ],
+    embalagens: [
+      { id: 1, comprimento: 145, altura: 50, largura: 30 }
+    ],
+    links: {
+      googleDrive: "https://drive.google.com/rack-tv-suspenso-003",
+      olist: "https://olist.com/rack-tv-003",
+      personalizados: [
+        { id: 1, nome: "Guia de Instalação", url: "https://instalacao.metalom.com/rack-003" },
+        { id: 2, nome: "Suporte Técnico", url: "https://suporte.metalom.com/contato" }
+      ]
+    },
+    observacao: "Suporta TVs de 32\" a 55\". Incluí template de furação para facilitar a instalação."
+  }
 ];
 
-// Mock de componentes disponíveis para seleção
+// Componentes disponíveis para seleção incluindo os usados nos produtos cadastrados
 const componentesDisponiveis = [
   { id: 1, nome: "Parafuso M6x20", peso: 0.015, valor: 0.25 },
   { id: 2, nome: "Porca M6", peso: 0.008, valor: 0.15 },
@@ -21,6 +123,19 @@ const componentesDisponiveis = [
   { id: 4, nome: "Chapa Aço 100x50", peso: 0.785, valor: 12.50 },
   { id: 5, nome: "Tubo 20x20x2", peso: 1.232, valor: 8.75 },
   { id: 6, nome: "Solda MIG", peso: 0.001, valor: 0.10 },
+  { id: 7, nome: "Pés metálicos", peso: 3.200, valor: 28.50 },
+  { id: 8, nome: "Tampo MDF", peso: 18.500, valor: 125.00 },
+  { id: 9, nome: "Parafusos de fixação", peso: 0.020, valor: 0.80 },
+  { id: 10, nome: "Suportes laterais", peso: 3.240, valor: 22.80 },
+  { id: 11, nome: "Montantes verticais", peso: 6.200, valor: 44.75 },
+  { id: 12, nome: "Prateleiras MDF", peso: 5.000, valor: 37.50 },
+  { id: 13, nome: "Suportes de prateleira", peso: 0.350, valor: 4.20 },
+  { id: 14, nome: "Parafusos estruturais", peso: 0.093, valor: 0.95 },
+  { id: 15, nome: "Estrutura principal", peso: 8.500, valor: 95.00 },
+  { id: 16, nome: "Prateleiras internas", peso: 1.400, valor: 17.50 },
+  { id: 17, nome: "Suporte de fixação na parede", peso: 2.890, valor: 35.80 },
+  { id: 18, nome: "Kit de parafusos e buchas", peso: 0.250, valor: 8.90 },
+  { id: 19, nome: "Passador de cabos", peso: 0.025, valor: 1.60 }
 ];
 
 export default function ProdutosPage() {
@@ -30,10 +145,10 @@ export default function ProdutosPage() {
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   
   // Estados para sistema de lembretes
-  const [fieldReminders, setFieldReminders] = useState<Record<string, { reminders: string[]; info: string }>>({
-    nome: { reminders: ['Usar nomenclatura padronizada'], info: 'O nome deve ser claro e descritivo' },
-    descricao: { reminders: ['Incluir especificações técnicas'], info: 'Descrição detalhada do produto' },
-    comprimento: { reminders: ['Verificar unidade de medida'], info: 'Medida em centímetros' }
+  const [fieldReminders, setFieldReminders] = useState<Record<string, { reminders: Array<{title: string; content: string; date: string}>; info: string }>>({
+    nome: { reminders: [{ title: 'Usar nomenclatura padronizada', content: 'Sempre usar padrão definido pela empresa', date: new Date().toLocaleDateString('pt-BR') }], info: 'O nome deve ser claro e descritivo' },
+    descricao: { reminders: [{ title: 'Incluir especificações técnicas', content: 'Detalhar materiais, dimensões e características', date: new Date().toLocaleDateString('pt-BR') }], info: 'Descrição detalhada do produto' },
+    comprimento: { reminders: [{ title: 'Verificar unidade de medida', content: 'Sempre usar centímetros como padrão', date: new Date().toLocaleDateString('pt-BR') }], info: 'Medida em centímetros' }
   });
   const [editModal, setEditModal] = useState<{ open: boolean; field: string; type: 'reminder' | 'info' }>({
     open: false, field: '', type: 'reminder'
@@ -42,6 +157,13 @@ export default function ProdutosPage() {
     open: false, field: ''
   });
   const [editValue, setEditValue] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [selectedReminder, setSelectedReminder] = useState<{title: string; content: string; date: string} | null>(null);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ open: boolean; field: string; index: number }>({
+    open: false,
+    field: '',
+    index: -1
+  });
   
   // Estados para controlar qual campo está ativo para mostrar a lâmpada
   const [activeField, setActiveField] = useState<string | null>(null);
@@ -98,7 +220,12 @@ export default function ProdutosPage() {
   // Funções para gerenciar lembretes
   const openEditModal = (field: string, type: 'reminder' | 'info') => {
     const current = fieldReminders[field];
-    setEditValue(type === 'reminder' ? '' : (current?.info || ''));
+    if (type === 'reminder') {
+      setEditTitle('');
+      setEditValue('');
+    } else {
+      setEditValue(current?.info || '');
+    }
     setEditModal({ open: true, field, type });
     setViewModal({ open: false, field: '' });
   };
@@ -110,13 +237,17 @@ export default function ProdutosPage() {
       if (type === 'reminder') {
         return {
           ...prev,
-          [field]: { ...entry, reminders: [...(entry.reminders || []), editValue] }
+          [field]: { 
+            ...entry, 
+            reminders: [...(entry.reminders || []), { title: editTitle, content: editValue, date: new Date().toLocaleDateString('pt-BR') }] 
+          }
         };
       }
       return { ...prev, [field]: { ...entry, info: editValue } };
     });
     setEditModal({ open: false, field: '', type: 'reminder' });
     setEditValue('');
+    setEditTitle('');
     // Reabrir o modal de visualização
     setViewModal({ open: true, field });
   };
@@ -129,6 +260,19 @@ export default function ProdutosPage() {
         [type]: ''
       }
     }));
+  };
+
+  // Função para confirmar e executar a exclusão do lembrete
+  const confirmDeleteReminder = () => {
+    const { field, index } = deleteConfirmModal;
+    setFieldReminders(prev => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        reminders: prev[field]?.reminders?.filter((_, i) => i !== index) || []
+      }
+    }));
+    setDeleteConfirmModal({ open: false, field: '', index: -1 });
   };
 
   // Componente para mostrar dicas da aba quando clicado no ícone
@@ -463,7 +607,7 @@ export default function ProdutosPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-[24px] font-bold leading-[1.2] text-[#111827]">Gestão de Produtos</h1>
         <button
-          className="flex items-center gap-2 bg-[#111827] text-white px-4 py-2.5 rounded-md font-medium text-[14px] shadow-sm hover:bg-black transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#111827]"
+          className="flex items-center gap-2 bg-[#111827] text-white px-4 py-2.5 rounded-md font-medium text-[14px] shadow-sm hover:bg:black transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#111827]"
           onClick={openModal}
         >
           <span className="material-symbols-rounded text-xl">add</span>
@@ -472,7 +616,7 @@ export default function ProdutosPage() {
       </div>
       {/* Botão principal '+ Novo' já está presente no cabeçalho */}
       <div className="flex-1 flex flex-col justify-stretch">
-        <div className="flex flex-col h-full w-full bg-white">
+        <div className="flex flex-col h-full w-full bg:white">
           {/* Cabeçalho da tabela */}
           <div className="grid grid-cols-[3fr_1fr_1fr_1fr] items-center gap-x-4 py-2">
             <div className="text-[12px] font-medium text-[#6B7280]">Nome</div>
@@ -526,7 +670,7 @@ export default function ProdutosPage() {
             <div className="bg-white border-b border-gray-200 rounded-t-xl">
               {/* Seção da Aba Atual */}
               <div className="px-8 py-7">
-                <div className="flex items-center justify-between">
+                <div className="flex items:center justify-between">
                   {/* Informações da aba atual */}
                   <div className="flex items-center gap-6 flex-1">
                     {/* Cabeçalho refinado */}
@@ -570,7 +714,7 @@ export default function ProdutosPage() {
                       setModalOpen(false);
                     }} 
                     aria-label="Fechar" 
-                    className="p-1 transition-colors opacity-60 hover:opacity-100"
+                    className="p-1 transition-colors opacity-60 hover:opacity:100"
                   >
                     <span className="material-symbols-rounded text-[18px] text-gray-400">close</span>
                   </button>
@@ -707,7 +851,7 @@ export default function ProdutosPage() {
                     </div>
                     {/* Largura */}
                     <div className="col-span-4">
-                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
+                      <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor:pointer select-none">
                         Largura (cm)
                       </label>
                       <input 
@@ -818,7 +962,7 @@ export default function ProdutosPage() {
                       <h4 className="text-[15px] font-medium text-[#111827]">Componentes</h4>
                       <div className="flex items-center gap-4 text-[13px]">
                         <span className="text-gray-600">
-                          Peso: <strong>{(pesoManual.trim() !== '' ? parseFloat(pesoManual).toFixed(3) : pesoTotal.toFixed(3))} kg</strong>
+                          Peso: <strong>{(pesoManual.trim() !== '' ? parseFloat(pesoManual).toFixed(3) : valorTotal.toFixed(3))} kg</strong>
                         </span>
                         <span className="text-gray-600">
                           Valor: <strong>R$ {(valorManual.trim() !== '' ? parseFloat(valorManual).toFixed(2) : valorTotal.toFixed(2))}</strong>
@@ -1227,17 +1371,6 @@ export default function ProdutosPage() {
               {/* Tab Navigation */}
               <div className="flex gap-1">
                 <button
-                  onClick={() => setModalTab('lembretes')}
-                  className={`flex items-center gap-2 px-4 py-2 text-[14px] font-medium rounded-lg transition-all duration-200 ${
-                    modalTab === 'lembretes'
-                      ? 'bg-gray-100 text-gray-900 border border-gray-200'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                  }`}
-                >
-                  <span className="material-symbols-rounded text-[18px]">lightbulb</span>
-                  Lembretes
-                </button>
-                <button
                   onClick={() => setModalTab('info')}
                   className={`flex items-center gap-2 px-4 py-2 text-[14px] font-medium rounded-lg transition-all duration-200 ${
                     modalTab === 'info'
@@ -1247,6 +1380,17 @@ export default function ProdutosPage() {
                 >
                   <span className="material-symbols-rounded text-[18px]">info</span>
                   Informações
+                </button>
+                <button
+                  onClick={() => setModalTab('lembretes')}
+                  className={`flex items-center gap-2 px-4 py-2 text-[14px] font-medium rounded-lg transition-all duration-200 ${
+                    modalTab === 'lembretes'
+                      ? 'bg-gray-100 text-gray-900 border border-gray-200'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-[18px]">lightbulb</span>
+                  Lembretes
                 </button>
               </div>
               
@@ -1261,48 +1405,6 @@ export default function ProdutosPage() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              {modalTab === 'lembretes' && (
-                <div className="space-y-4">
-                  {/* Botão adicionar no topo */}
-                  <button 
-                    onClick={() => openEditModal(viewModal.field, 'reminder')}
-                    className="px-3 py-1.5 text-[13px] font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 hover:text-gray-700 transition-all"
-                  >
-                    Adicionar
-                  </button>
-                  
-                  {/* Lista de lembretes */}
-                  {fieldReminders[viewModal.field]?.reminders?.length > 0 ? (
-                    <div className="space-y-2">
-                      {fieldReminders[viewModal.field].reminders.map((reminder, index) => (
-                        <div key={index} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-[13px] text-yellow-800 relative group">
-                          {reminder}
-                          <button
-                            onClick={() => {
-                              setFieldReminders(prev => ({
-                                ...prev,
-                                [viewModal.field]: {
-                                  ...prev[viewModal.field],
-                                  reminders: prev[viewModal.field]?.reminders?.filter((_, i) => i !== index) || []
-                                }
-                              }));
-                            }}
-                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-yellow-600 hover:text-yellow-800 transition-opacity"
-                            title="Remover lembrete"
-                          >
-                            <span className="material-symbols-rounded text-[16px]">close</span>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-[13px] text-gray-500 italic">Nenhum lembrete adicionado</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {modalTab === 'info' && (
                 <div className="space-y-4">
                   {/* Botão adicionar/editar no topo */}
@@ -1327,7 +1429,7 @@ export default function ProdutosPage() {
                             }
                           }));
                         }}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-600 hover:text-gray-800 transition-opacity"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity:100 text-gray-600 hover:text-gray-800 transition-opacity"
                         title="Remover informação"
                       >
                         <span className="material-symbols-rounded text-[16px]">close</span>
@@ -1336,6 +1438,69 @@ export default function ProdutosPage() {
                   ) : (
                     <div className="text-center py-8">
                       <p className="text-[13px] text-gray-500 italic">Nenhuma informação adicionada</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {modalTab === 'lembretes' && (
+                <div className="space-y-4">
+                  {/* Botão adicionar no topo */}
+                  <button 
+                    onClick={() => openEditModal(viewModal.field, 'reminder')}
+                    className="px-3 py-1.5 text-[13px] font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 hover:text-gray-700 transition-all"
+                  >
+                    Adicionar
+                  </button>
+                  
+                  {/* Lista de lembretes */}
+                  {fieldReminders[viewModal.field]?.reminders?.length > 0 ? (
+                    <div className="space-y-3">
+                      {fieldReminders[viewModal.field].reminders.map((reminder, index) => (
+                        <div 
+                          key={index} 
+                          className="p-4 bg-white border border-gray-200 rounded-lg text-[13px] text-gray-800 relative group cursor-pointer hover:border-gray-300 hover:shadow-md transition-all"
+                          onClick={() => setSelectedReminder(reminder)}
+                          title="Clique para ver o conteúdo completo"
+                        >
+                          <div className="flex items-center gap-3">
+                            {/* Ícone de lembrete */}
+                            <div className="flex-shrink-0">
+                              <span className="material-symbols-rounded text-[20px] text-amber-500">lightbulb</span>
+                            </div>
+                            
+                            {/* Conteúdo do lembrete */}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900">{reminder.title}</div>
+                              <div className="text-[12px] text-gray-600 mt-1 line-clamp-2">
+                                {reminder.content.length > 80 
+                                  ? `${reminder.content.substring(0, 80)}...` 
+                                  : reminder.content
+                                }
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirmModal({
+                                open: true,
+                                field: viewModal.field,
+                                index: index
+                              });
+                            }}
+                            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all"
+                            title="Remover lembrete"
+                          >
+                            <span className="material-symbols-rounded text-[16px]">close</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-[13px] text-gray-500 italic">Nenhum lembrete adicionado</p>
                     </div>
                   )}
                 </div>
@@ -1376,13 +1541,44 @@ export default function ProdutosPage() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              <textarea
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                placeholder={editModal.type === 'reminder' ? 'Digite o lembrete...' : 'Digite as informações...'}
-                className="w-full min-h-[200px] px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-gray-400"
-                autoFocus
-              />
+              {editModal.type === 'reminder' ? (
+                <div className="space-y-4">
+                  {/* Campo de título */}
+                  <div>
+                    <label className="block text-[13px] font-medium text-gray-700 mb-2">
+                      Título do lembrete
+                    </label>
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      placeholder="Ex: Verificar especificações técnicas"
+                      className="w-full h-[40px] px-3 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      autoFocus
+                    />
+                  </div>
+                  {/* Campo de conteúdo */}
+                  <div>
+                    <label className="block text-[13px] font-medium text-gray-700 mb-2">
+                      Conteúdo do lembrete
+                    </label>
+                    <textarea
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      placeholder="Digite o conteúdo detalhado do lembrete. Ex: Sempre verificar se as dimensões estão dentro das especificações do cliente antes de prosseguir com a produção."
+                      className="w-full min-h-[150px] px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <textarea
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  placeholder="Digite as informações..."
+                  className="w-full min-h-[200px] px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  autoFocus
+                />
+              )}
             </div>
 
             {/* Footer */}
@@ -1395,9 +1591,95 @@ export default function ProdutosPage() {
               </button>
               <button 
                 onClick={saveFieldData}
-                className="px-4 py-2 text-[14px] font-medium bg-[#111827] text-white rounded-md hover:bg-black transition-colors"
+                disabled={editModal.type === 'reminder' && (!editTitle.trim() || !editValue.trim())}
+                className="px-4 py-2 text-[14px] font-medium bg-[#111827] text-white rounded-md hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Visualização do Lembrete */}
+      {selectedReminder && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40" onClick={(e) => e.target === e.currentTarget && setSelectedReminder(null)}>
+          <div className="bg-white rounded-xl shadow-lg w-[500px] max-h-[70vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-start justify-between p-6 border-b border-gray-200">
+              <div className="flex items-start gap-3">
+                {/* Ícone de lembrete */}
+                <div className="flex-shrink-0">
+                  <span className="material-symbols-rounded text-[22px] text-amber-500 leading-none">lightbulb</span>
+                </div>
+                
+                <div className="flex-1">
+                  <h3 className="text-[16px] font-semibold text-gray-800 leading-tight">
+                    {selectedReminder.title}
+                  </h3>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="material-symbols-rounded text-[14px] text-gray-500 leading-none">calendar_today</span>
+                    <p className="text-[12px] text-gray-600 leading-none">
+                      Criado em {selectedReminder.date}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedReminder(null)} 
+                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <span className="material-symbols-rounded text-[18px]">close</span>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-[14px] text-gray-800">
+                <div className="whitespace-pre-wrap">{selectedReminder.content}</div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+              <button 
+                onClick={() => setSelectedReminder(null)}
+                className="px-4 py-2 text-[14px] font-medium bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {deleteConfirmModal.open && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40" onClick={(e) => e.target === e.currentTarget && setDeleteConfirmModal({ open: false, field: '', index: -1 })}>
+          <div className="bg-white rounded-lg shadow-lg w-[280px] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Content */}
+            <div className="p-5 text-center">
+              <h3 className="text-[15px] font-medium text-gray-800 mb-2">
+                Excluir lembrete?
+              </h3>
+              <p className="text-[13px] text-gray-600">
+                Esta ação não pode ser desfeita.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-2 p-4 border-t border-gray-100">
+              <button 
+                onClick={() => setDeleteConfirmModal({ open: false, field: '', index: -1 })}
+                className="flex-1 px-3 py-2 text-[13px] font-medium text-gray-600 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmDeleteReminder}
+                className="flex-1 px-3 py-2 text-[13px] font-medium bg-gray-800 text-white rounded hover:bg-gray-900 transition-colors"
+              >
+                Excluir
               </button>
             </div>
           </div>
