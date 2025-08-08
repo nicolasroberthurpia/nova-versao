@@ -144,6 +144,20 @@ export default function ProdutosPage() {
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   
+  // Novo: controle do modal de resumo do produto
+  const [productSummary, setProductSummary] = useState<{ open: boolean; product: any | null }>({ open: false, product: null });
+  // Controle de exibição de detalhes no resumo
+  const [showDetails, setShowDetails] = useState(false);
+  // Menu de links no resumo
+  const [showLinksMenu, setShowLinksMenu] = useState(false);
+
+  useEffect(() => {
+    if (productSummary.open) {
+      setShowDetails(false); // sempre inicia no modo resumo
+      setShowLinksMenu(false); // fecha menu de links ao abrir
+    }
+  }, [productSummary.open]);
+  
   // Estados para sistema de lembretes
   const [fieldReminders, setFieldReminders] = useState<Record<string, { reminders: Array<{title: string; content: string; date: string}>; info: string }>>({
     nome: { reminders: [{ title: 'Usar nomenclatura padronizada', content: 'Sempre usar padrão definido pela empresa', date: new Date().toLocaleDateString('pt-BR') }], info: 'O nome deve ser claro e descritivo' },
@@ -540,8 +554,21 @@ export default function ProdutosPage() {
   };
 
   // Função para verificar se o valor é "n" ou variações
-  const isNotApplicable = (value: string) => {
-    return value.toLowerCase().trim() === 'n' || value.toLowerCase().trim() === 'n/a' || value.toLowerCase().trim() === 'na';
+  const isNotApplicable = (value: string | number | null | undefined) => {
+    if (value === null || value === undefined) return false;
+    const stringValue = String(value);
+    return stringValue.toLowerCase().trim() === 'n' || stringValue.toLowerCase().trim() === 'n/a' || stringValue.toLowerCase().trim() === 'na';
+  };
+
+  // Função para formatar valor no resumo (mostra N/A se aplicável)
+  const formatValueForSummary = (value: string | number | null | undefined, unit: string = '') => {
+    if (isNotApplicable(value)) {
+      return 'N/A';
+    }
+    if (value === null || value === undefined || value === '') {
+      return 'N/A';
+    }
+    return `${value}${unit}`;
   };
 
   // Função para lidar com mudanças nos campos
@@ -558,7 +585,7 @@ export default function ProdutosPage() {
   };
 
   // Função para obter classes CSS baseadas no valor
-  const getFieldClasses = (value: string, fieldName?: string) => {
+  const getFieldClasses = (value: string | number | null | undefined, fieldName?: string) => {
     const baseClasses = "w-full h-[40px] px-3 border rounded-[6px] text-[14px] font-normal transition-all duration-200";
     
     // Adiciona borda azul se o campo está protegido
@@ -573,7 +600,7 @@ export default function ProdutosPage() {
   };
 
   // Função para obter classes CSS para textarea
-  const getTextareaClasses = (value: string, fieldName?: string) => {
+  const getTextareaClasses = (value: string | number | null | undefined, fieldName?: string) => {
     const baseClasses = "w-full min-h-[100px] px-3 py-2 border rounded-[6px] text-[14px] font-normal transition-all duration-200";
     
     // Adiciona borda azul se o campo está protegido
@@ -618,8 +645,9 @@ export default function ProdutosPage() {
       <div className="flex-1 flex flex-col justify-stretch">
         <div className="flex flex-col h-full w-full bg:white">
           {/* Cabeçalho da tabela */}
-          <div className="grid grid-cols-[3fr_1fr_1fr_1fr] items-center gap-x-4 py-2">
+          <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] items-center gap-x-4 py-2">
             <div className="text-[12px] font-medium text-[#6B7280]">Nome</div>
+            <div className="text-[12px] font-medium text-[#6B7280]">SKU</div>
             <div className="text-[12px] font-medium text-[#6B7280]">Categoria</div>
             <div className="text-[12px] font-medium text-[#6B7280]">Peso</div>
             <div className="text-[12px] font-medium text-[#6B7280]">Preço</div>
@@ -628,14 +656,19 @@ export default function ProdutosPage() {
           {produtos.map((produto, idx) => (
             <div
               key={produto.id}
-              className="w-full py-3"
+              // Deixa a linha clicável para abrir o resumo
+              onClick={() => setProductSummary({ open: true, product: produto })}
+              className="w-full py-3 hover:bg-gray-50 cursor-pointer"
               style={{ borderBottom: idx !== produtos.length - 1 ? '1px solid #F3F4F6' : 'none' }}
             >
-              <div className="grid grid-cols-[3fr_1fr_1fr_1fr] items-center gap-x-4">
-                {/* Nome e SKU */}
+              <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] items-center gap-x-4">
+                {/* Nome */}
                 <div>
                   <div className="text-[16px] font-normal leading-[1.4] text-[#1F2937]">{produto.nome}</div>
-                  <div className="text-[13px] font-normal leading-[1.4] text-[#6B7280] mt-1">SKU: {produto.sku}</div>
+                </div>
+                {/* SKU */}
+                <div>
+                  <div className="text-[13px] font-normal leading-[1.4] text-[#6B7280]">{produto.sku}</div>
                 </div>
                 {/* Categoria como tag harmonizada */}
                 <div>
@@ -962,7 +995,7 @@ export default function ProdutosPage() {
                       <h4 className="text-[15px] font-medium text-[#111827]">Componentes</h4>
                       <div className="flex items-center gap-4 text-[13px]">
                         <span className="text-gray-600">
-                          Peso: <strong>{(pesoManual.trim() !== '' ? parseFloat(pesoManual).toFixed(3) : valorTotal.toFixed(3))} kg</strong>
+                          Peso: <strong>{(pesoManual.trim() !== '' ? parseFloat(pesoManual).toFixed(3) : pesoTotal.toFixed(3))} kg</strong>
                         </span>
                         <span className="text-gray-600">
                           Valor: <strong>R$ {(valorManual.trim() !== '' ? parseFloat(valorManual).toFixed(2) : valorTotal.toFixed(2))}</strong>
@@ -1648,6 +1681,302 @@ export default function ProdutosPage() {
               >
                 Fechar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Resumo Simples e Clean */}
+      {productSummary.open && productSummary.product && (
+        <div
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40"
+          onClick={(e) => e.target === e.currentTarget && setProductSummary({ open: false, product: null })}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg w-[850px] max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header clean e moderno - fixo */}
+            <div className="relative p-6 bg-white border-b border-gray-100 flex-shrink-0">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h1 className="text-[24px] font-semibold text-gray-900 leading-tight">
+                    {productSummary.product.nome}
+                  </h1>
+                  <div className="flex items-center gap-4 mt-3">
+                    <span className="text-[14px] text-gray-500">
+                      {productSummary.product.sku}
+                    </span>
+                    <span className="text-gray-300">•</span>
+                    <span className="text-[14px] px-2 py-1 bg-gray-100 text-gray-700 rounded-md font-medium">
+                      {productSummary.product.categoria}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 ml-4">
+                  {/* Botão de Links clean */}
+                  <div className="relative">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setShowLinksMenu(v => !v); }}
+                      className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all"
+                      aria-haspopup="menu"
+                      aria-expanded={showLinksMenu}
+                      title="Links"
+                      type="button"
+                    >
+                      <span className="material-symbols-rounded text-[20px]">link</span>
+                    </button>
+                    
+                    {/* Menu dropdown clean */}
+                    {showLinksMenu && (
+                      <div className="absolute right-0 top-12 z-10 w-64 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden" role="menu">
+                        <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+                          <div className="text-[13px] font-medium text-gray-700">Links</div>
+                        </div>
+                        <div className="py-2">
+                          {productSummary.product?.links?.googleDrive && (
+                            <a
+                              href={productSummary.product.links.googleDrive}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 text-[14px] text-gray-800"
+                              role="menuitem"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <span>Google Drive</span>
+                              <span className="material-symbols-rounded text-[16px] text-gray-400">open_in_new</span>
+                            </a>
+                          )}
+                          {productSummary.product?.links?.olist && (
+                            <a
+                              href={productSummary.product.links.olist}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 text-[14px] text-gray-800"
+                              role="menuitem"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <span>Olist</span>
+                              <span className="material-symbols-rounded text-[16px] text-gray-400">open_in_new</span>
+                            </a>
+                          )}
+                          {Array.isArray(productSummary.product?.links?.personalizados) && productSummary.product.links.personalizados.length > 0 && (
+                            productSummary.product.links.personalizados.map((l: any) => (
+                              <a
+                                key={l.id}
+                                href={l.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 text-[14px] text-gray-800"
+                                role="menuitem"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <span className="truncate">{l.nome || l.url}</span>
+                                <span className="material-symbols-rounded text-[16px] text-gray-400">open_in_new</span>
+                              </a>
+                            ))
+                          )}
+                          {!productSummary.product?.links?.googleDrive && !productSummary.product?.links?.olist && (!Array.isArray(productSummary.product?.links?.personalizados) || productSummary.product.links.personalizados.length === 0) && (
+                            <div className="px-4 py-3 text-[13px] text-gray-500">Nenhum link disponível</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Fechar clean */}
+                  <button
+                    onClick={() => setProductSummary({ open: false, product: null })}
+                    className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all"
+                    aria-label="Fechar"
+                    type="button"
+                  >
+                    <span className="material-symbols-rounded text-[20px]">close</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Container com scroll melhorado */}
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              <div className="p-6 pb-8">
+              {/* Descrição clean */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <p className="text-[15px] leading-relaxed text-gray-600">
+                  {isNotApplicable(productSummary.product.descricao) ? 'N/A' : (productSummary.product.descricao || 'Sem descrição')}
+                </p>
+              </div>
+
+              {/* Métricas em cards clean */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="p-4 bg-white rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <span className="material-symbols-rounded text-[20px] text-gray-600">attach_money</span>
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-medium text-gray-500">Preço</p>
+                      <p className="text-[18px] font-semibold text-gray-900">
+                        R$ {(Number(productSummary.product.preco) || 0).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-white rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <span className="material-symbols-rounded text-[20px] text-gray-600">scale</span>
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-medium text-gray-500">Peso</p>
+                      <p className="text-[18px] font-semibold text-gray-900">
+                        {(Number(productSummary.product.peso) || 0).toFixed(3)} kg
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botão para alternar detalhes clean */}
+              <div className="border-t border-gray-100 pt-5 mb-5">
+                <button
+                  onClick={() => setShowDetails((v) => !v)}
+                  className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  type="button"
+                >
+                  <span className="material-symbols-rounded text-[18px]">
+                    {showDetails ? 'visibility_off' : 'visibility'}
+                  </span>
+                  <span className="font-medium">
+                    {showDetails ? 'Ocultar detalhes' : 'Ver detalhes completos'}
+                  </span>
+                </button>
+              </div>
+
+              {/* Detalhes expandidos simples e limpos */}
+              {showDetails && (
+                <div className="space-y-6 border-t border-gray-200 pt-6">
+                  {/* Medidas simples */}
+                  <div className="bg-white p-4 rounded-lg border border-gray-200">
+                    <h3 className="text-[16px] font-medium text-gray-900 mb-4">
+                      Dimensões e Medidas
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 text-[14px]">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Comprimento</span>
+                        <span className="text-gray-900 font-medium">{formatValueForSummary(productSummary.product.medidas?.comprimento, ' cm')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Altura</span>
+                        <span className="text-gray-900 font-medium">{formatValueForSummary(productSummary.product.medidas?.altura, ' cm')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Largura</span>
+                        <span className="text-gray-900 font-medium">{formatValueForSummary(productSummary.product.medidas?.largura, ' cm')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Esp. Ferro</span>
+                        <span className="text-gray-900 font-medium">{formatValueForSummary(productSummary.product.medidas?.espessuraFerro, ' mm')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Esp. MDF</span>
+                        <span className="text-gray-900 font-medium">{formatValueForSummary(productSummary.product.medidas?.espessuraMdf, ' mm')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Dist. Nichos</span>
+                        <span className="text-gray-900 font-medium">{formatValueForSummary(productSummary.product.medidas?.distanciaNichos, ' cm')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Dist. Varões</span>
+                        <span className="text-gray-900 font-medium">{formatValueForSummary(productSummary.product.medidas?.distanciaVaroes, ' cm')}</span>
+                      </div>
+                    </div>
+                  </div>                  {/* Componentes tabela simples */}
+                  {Array.isArray(productSummary.product.componentes) && productSummary.product.componentes.length > 0 && (
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <h3 className="text-[16px] font-medium text-gray-900 mb-4">
+                        Componentes ({productSummary.product.componentes.length} itens)
+                      </h3>
+                      <div className="space-y-2">
+                        {productSummary.product.componentes.map((c: any) => (
+                          <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span className="text-[14px] font-medium text-gray-900">{c.nome}</span>
+                            <span className="text-[14px] text-gray-600">Qtd: {c.quantidade}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Embalagens simples */}
+                  {Array.isArray(productSummary.product.embalagens) && productSummary.product.embalagens.length > 0 && (
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <h3 className="text-[16px] font-medium text-gray-900 mb-4">
+                        Embalagens ({productSummary.product.embalagens.length} volumes)
+                      </h3>
+                      <div className="space-y-3 text-[14px]">
+                        {productSummary.product.embalagens.map((e: any, index: number) => (
+                          <div key={e.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span className="text-gray-600 font-medium">Volume {index + 1}</span>
+                            <span className="text-gray-900 font-mono">
+                              {e.comprimento} × {e.altura} × {e.largura} cm
+                            </span>
+                          </div>
+                        ))}
+                        <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="text-[13px] text-gray-700">
+                            <strong>Volume Total:</strong> {(
+                              productSummary.product.embalagens.reduce((acc: number, e: any) => 
+                                acc + (Number(e.comprimento) || 0) * (Number(e.altura) || 0) * (Number(e.largura) || 0), 0
+                              ) / 1000
+                            ).toFixed(2)} litros
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Observações simples */}
+                  <div className="bg-white p-4 rounded-lg border border-gray-200">
+                    <h3 className="text-[16px] font-medium text-gray-900 mb-3">
+                      Observações
+                    </h3>
+                    <div className="text-[14px] text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg">
+                      {isNotApplicable(productSummary.product.observacao) ? 'N/A' : (productSummary.product.observacao || 'Sem observações')}
+                    </div>
+                  </div>
+
+                  {/* Links Personalizados simples */}
+                  {Array.isArray(productSummary.product?.links?.personalizados) && productSummary.product.links.personalizados.length > 0 && (
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <h3 className="text-[16px] font-medium text-gray-900 mb-3">
+                        Links Adicionais
+                      </h3>
+                      <div className="space-y-2">
+                        {productSummary.product.links.personalizados.map((link: any) => (
+                          <div key={link.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span className="text-[14px] text-gray-800 font-medium">{link.nome || 'Link'}</span>
+                            <a 
+                              href={link.url} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-[13px] text-gray-600 hover:text-gray-800 font-medium"
+                            >
+                              Abrir
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Espaço extra no final para garantir que tudo seja visível */}
+                  <div className="h-4"></div>
+                </div>
+              )}
+              </div>
             </div>
           </div>
         </div>
