@@ -195,6 +195,82 @@ export default function ProdutosPage() {
     timer: null
   });
   
+  // Estados para sistema de tags de categoria
+  const [categoryTags, setCategoryTags] = useState<string[]>([
+    "Móveis para Escritório",
+    "Estantes e Prateleiras", 
+    "Racks e Suportes",
+    "Brinquedos",
+    "Decoração",
+    "Cozinha",
+    "Ferramentas",
+    "Eletrônicos",
+    "Matéria-prima",
+    "Fixação",
+    "Estrutural",
+    "Acabamento",
+    "Consumível"
+  ]);
+  const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
+  const [showNewTagModal, setShowNewTagModal] = useState(false);
+  const [pendingNewTag, setPendingNewTag] = useState('');
+  const [categoryInputFocused, setCategoryInputFocused] = useState(false);
+  
+  // Estado para modal SEO
+  const [seoModalOpen, setSeoModalOpen] = useState(false);
+  const [selectedProductForSeo, setSelectedProductForSeo] = useState<any>(null);
+  const [activeSeoTab, setActiveSeoTab] = useState<'Identificação'|'Público-Alvo'|'Palavras-Chave'|'Tags Meta'>('Identificação');
+  
+  // Estados para sistema de tags do público-alvo (uma por categoria)
+  const [selectedAgeTag, setSelectedAgeTag] = useState<string>('');
+  const [selectedIncomeTag, setSelectedIncomeTag] = useState<string>('');
+  const [selectedInterestTag, setSelectedInterestTag] = useState<string>('');
+  const [selectedIntentionTag, setSelectedIntentionTag] = useState<string>('');
+  
+  // Estados para adicionar novas tags
+  const [showAddAgeTag, setShowAddAgeTag] = useState(false);
+  const [showAddIncomeTag, setShowAddIncomeTag] = useState(false);
+  const [showAddInterestTag, setShowAddInterestTag] = useState(false);
+  const [showAddIntentionTag, setShowAddIntentionTag] = useState(false);
+  const [newAgeTag, setNewAgeTag] = useState('');
+  const [newIncomeTag, setNewIncomeTag] = useState('');
+  const [newInterestTag, setNewInterestTag] = useState('');
+  const [newIntentionTag, setNewIntentionTag] = useState('');
+  
+  // Tags predefinidas por categoria (agora mutáveis)
+  const [predefinedAgeTags, setPredefinedAgeTags] = useState([
+    '25-34 anos',
+    '35-44 anos', 
+    '45-54 anos'
+  ]);
+
+  const [predefinedIncomeTags, setPredefinedIncomeTags] = useState([
+    'Classe B (R$ 4.180 - R$ 10.386)',
+    'Classe A (R$ 10.387+)',
+    'Empreendedores/Empresários'
+  ]);
+
+  const [predefinedInterestTags, setPredefinedInterestTags] = useState([
+    'Empreendedorismo',
+    'Varejo e comércio',
+    'Móveis comerciais',
+    'Equipamentos para loja',
+    'Visual merchandising',
+    'Gestão de negócios',
+    'Abertura de empresa',
+    'Decoração comercial',
+    'Organização de loja',
+    'Pequenos negócios'
+  ]);
+
+  const [predefinedIntentionTags, setPredefinedIntentionTags] = useState([
+    'Compra comercial',
+    'Pesquisa de fornecedores',
+    'Comparação de produtos',
+    'Solução para negócio'
+  ]);
+  
   // Estados para os campos do formulário
   const [formData, setFormData] = useState({
     nome: '',
@@ -302,6 +378,130 @@ export default function ProdutosPage() {
     const tabFieldKey = `tab_${tabName}`;
     const tabData = fieldReminders[tabFieldKey];
     return (tabData?.reminders?.length || 0) > 0 || (tabData?.info?.length || 0) > 0;
+  };
+
+  // Funções para sistema de tags de categoria
+  const handleCategoryChange = (value: string) => {
+    handleFieldChange('categoria', value);
+    
+    if (value.trim() === '') {
+      setCategorySuggestions([]);
+      setShowCategorySuggestions(false);
+      return;
+    }
+
+    // Filtrar tags que começam com o texto digitado
+    const filtered = categoryTags.filter(tag => 
+      tag.toLowerCase().startsWith(value.toLowerCase())
+    );
+    
+    setCategorySuggestions(filtered);
+    setShowCategorySuggestions(filtered.length > 0);
+  };
+
+  const selectCategoryTag = (tag: string) => {
+    handleFieldChange('categoria', tag);
+    setShowCategorySuggestions(false);
+    setCategorySuggestions([]);
+  };
+
+  const handleCategoryBlur = () => {
+    // Pequeno delay para permitir clique nas sugestões
+    setTimeout(() => {
+      setShowCategorySuggestions(false);
+      setCategoryInputFocused(false);
+      
+      // Verificar se é uma nova tag
+      const currentValue = formData.categoria.trim();
+      if (currentValue && !categoryTags.some(tag => tag.toLowerCase() === currentValue.toLowerCase())) {
+        setPendingNewTag(currentValue);
+        setShowNewTagModal(true);
+      }
+    }, 150);
+  };
+
+  const handleCategoryFocus = () => {
+    setCategoryInputFocused(true);
+    handleFieldFocus('categoria'); // Chama a função original do sistema
+    if (formData.categoria.trim()) {
+      handleCategoryChange(formData.categoria);
+    }
+  };
+
+  const confirmNewTag = () => {
+    if (pendingNewTag.trim()) {
+      setCategoryTags(prev => [...prev, pendingNewTag.trim()]);
+      setShowNewTagModal(false);
+      setPendingNewTag('');
+    }
+  };
+
+  const cancelNewTag = () => {
+    setShowNewTagModal(false);
+    setPendingNewTag('');
+    // Limpar o campo se o usuário cancelar
+    handleFieldChange('categoria', '');
+  };
+
+  // Função para abrir modal de SEO
+  const openSeoModal = (product: any) => {
+    setSelectedProductForSeo(product);
+    setSeoModalOpen(true);
+    setProductSummary({ open: false, product: null }); // Fecha o modal de detalhes
+  };
+
+  // Funções para gerenciar tags do público-alvo (uma por categoria)
+  const selectAgeTag = (tag: string) => {
+    setSelectedAgeTag(selectedAgeTag === tag ? '' : tag);
+  };
+
+  const selectIncomeTag = (tag: string) => {
+    setSelectedIncomeTag(selectedIncomeTag === tag ? '' : tag);
+  };
+
+  const selectInterestTag = (tag: string) => {
+    setSelectedInterestTag(selectedInterestTag === tag ? '' : tag);
+  };
+
+  const selectIntentionTag = (tag: string) => {
+    setSelectedIntentionTag(selectedIntentionTag === tag ? '' : tag);
+  };
+
+  // Funções para adicionar novas tags personalizadas
+  const addNewAgeTag = () => {
+    if (newAgeTag.trim() && !predefinedAgeTags.includes(newAgeTag.trim())) {
+      setPredefinedAgeTags(prev => [...prev, newAgeTag.trim()]);
+      setSelectedAgeTag(newAgeTag.trim());
+      setNewAgeTag('');
+      setShowAddAgeTag(false);
+    }
+  };
+
+  const addNewIncomeTag = () => {
+    if (newIncomeTag.trim() && !predefinedIncomeTags.includes(newIncomeTag.trim())) {
+      setPredefinedIncomeTags(prev => [...prev, newIncomeTag.trim()]);
+      setSelectedIncomeTag(newIncomeTag.trim());
+      setNewIncomeTag('');
+      setShowAddIncomeTag(false);
+    }
+  };
+
+  const addNewInterestTag = () => {
+    if (newInterestTag.trim() && !predefinedInterestTags.includes(newInterestTag.trim())) {
+      setPredefinedInterestTags(prev => [...prev, newInterestTag.trim()]);
+      setSelectedInterestTag(newInterestTag.trim());
+      setNewInterestTag('');
+      setShowAddInterestTag(false);
+    }
+  };
+
+  const addNewIntentionTag = () => {
+    if (newIntentionTag.trim() && !predefinedIntentionTags.includes(newIntentionTag.trim())) {
+      setPredefinedIntentionTags(prev => [...prev, newIntentionTag.trim()]);
+      setSelectedIntentionTag(newIntentionTag.trim());
+      setNewIntentionTag('');
+      setShowAddIntentionTag(false);
+    }
   };
 
 
@@ -698,7 +898,7 @@ export default function ProdutosPage() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={(e) => e.target === e.currentTarget && setModalOpen(false)}>
-          <div className="bg-white rounded-xl shadow-lg w-[700px] max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-xl shadow-lg w-[700px] max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="bg-white border-b border-gray-200 rounded-t-xl">
               {/* Seção da Aba Atual */}
@@ -755,7 +955,7 @@ export default function ProdutosPage() {
               </div>
             </div>
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-8 py-7">
+            <div className="flex-1 overflow-y-auto px-8 py-6">
               <div className="transition-opacity duration-200 ease-in-out">
                 {/* Aba Informações */}
                 {activeTab === 'Informações' && (
@@ -817,20 +1017,41 @@ export default function ProdutosPage() {
                       )}
                     </div>
                     {/* Categoria */}
-                    <div className="col-span-6">
+                    <div className="col-span-6 relative">
                       <label className="block text-[14px] font-medium text-[#111827] mb-2 cursor-pointer select-none">
                         Categoria
                       </label>
-                      <input 
-                        type="text" 
-                        placeholder="Ex: Vestuário" 
-                        value={formData.categoria}
-                        onChange={(e) => handleFieldChange('categoria', e.target.value)}
-                        className={getFieldClasses(formData.categoria, 'categoria')}
-                        onFocus={() => handleFieldFocus('categoria')}
-                        onBlur={() => handleProtectedBlur('categoria')}
-                        onClick={() => handleProtectedClick('categoria')}
-                      />
+                      <div className="relative">
+                        <input 
+                          type="text" 
+                          placeholder="Ex: Móveis para Escritório" 
+                          value={formData.categoria}
+                          onChange={(e) => handleCategoryChange(e.target.value)}
+                          className={getFieldClasses(formData.categoria, 'categoria')}
+                          onFocus={handleCategoryFocus}
+                          onBlur={handleCategoryBlur}
+                          onClick={() => handleProtectedClick('categoria')}
+                          autoComplete="off"
+                        />
+                        
+                        {/* Lista de sugestões */}
+                        {showCategorySuggestions && categorySuggestions.length > 0 && (
+                          <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
+                            {categorySuggestions.map((tag, index) => (
+                              <button
+                                key={index}
+                                type="button"
+                                className="w-full text-left px-3 py-2 text-[14px] hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                                onMouseDown={(e) => e.preventDefault()} // Previne o blur do input
+                                onClick={() => selectCategoryTag(tag)}
+                              >
+                                <span className="material-symbols-rounded text-[16px] text-gray-400">tag</span>
+                                {tag}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       {isNotApplicable(formData.categoria) && (
                         <span className="text-[12px] text-gray-500 mt-1 block">Campo marcado como não aplicável</span>
                       )}
@@ -1693,11 +1914,11 @@ export default function ProdutosPage() {
           onClick={(e) => e.target === e.currentTarget && setProductSummary({ open: false, product: null })}
         >
           <div
-            className="bg-white rounded-lg shadow-lg w-[850px] max-h-[90vh] flex flex-col"
+            className="bg-white rounded-xl shadow-lg w-[850px] max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header clean e moderno - fixo */}
-            <div className="relative p-6 bg-white border-b border-gray-100 flex-shrink-0">
+            <div className="relative p-6 bg-white border-b border-gray-100 flex-shrink-0 rounded-t-xl">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h1 className="text-[24px] font-semibold text-gray-900 leading-tight">
@@ -1785,6 +2006,16 @@ export default function ProdutosPage() {
                     )}
                   </div>
                   
+                  {/* Botão SEO */}
+                  <button
+                    onClick={() => openSeoModal(productSummary.product)}
+                    className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all"
+                    title="SEO do Produto"
+                    type="button"
+                  >
+                    <span className="material-symbols-rounded text-[20px]">extension</span>
+                  </button>
+                  
                   {/* Fechar clean */}
                   <button
                     onClick={() => setProductSummary({ open: false, product: null })}
@@ -1799,7 +2030,7 @@ export default function ProdutosPage() {
             </div>
 
             {/* Container com scroll melhorado */}
-            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 rounded-b-xl">
               <div className="p-6 pb-8">
               {/* Descrição clean */}
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
@@ -2010,6 +2241,704 @@ export default function ProdutosPage() {
               >
                 Excluir
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Criar Nova Tag de Categoria */}
+      {showNewTagModal && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/40" onClick={(e) => e.target === e.currentTarget && cancelNewTag()}>
+          <div className="bg-white rounded-xl shadow-lg w-[320px] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-5 text-center border-b border-gray-200">
+              <h3 className="text-[15px] font-medium text-gray-800 mb-1">
+                Nova Categoria
+              </h3>
+              <p className="text-[12px] text-gray-600">
+                Criar categoria para futuros produtos?
+              </p>
+            </div>
+
+            {/* Content */}
+            <div className="p-5">
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                <div className="text-[14px] font-medium text-gray-800">
+                  "{pendingNewTag}"
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-2 p-4 border-t border-gray-100">
+              <button 
+                onClick={cancelNewTag}
+                className="flex-1 px-3 py-2 text-[13px] font-medium text-gray-600 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmNewTag}
+                className="flex-1 px-3 py-2 text-[13px] font-medium bg-gray-800 text-white rounded hover:bg-gray-900 transition-colors"
+              >
+                Criar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de SEO do Produto */}
+      {seoModalOpen && selectedProductForSeo && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/40" onClick={(e) => e.target === e.currentTarget && setSeoModalOpen(false)}>
+          <div className="bg-white rounded-xl shadow-lg w-[800px] max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 rounded-t-xl px-8 py-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-[20px] font-semibold text-gray-900">SEO do Produto</h1>
+                  <p className="text-[13px] text-gray-600 mt-1">
+                    {selectedProductForSeo.nome} - {selectedProductForSeo.sku}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSeoModalOpen(false)}
+                  className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all"
+                  aria-label="Fechar"
+                >
+                  <span className="material-symbols-rounded text-[20px]">close</span>
+                </button>
+              </div>
+              
+              {/* Tabs */}
+              <div className="flex gap-1 mt-6">
+                <button
+                  onClick={() => setActiveSeoTab('Identificação')}
+                  className={`flex items-center gap-2 px-4 py-2 text-[14px] font-medium rounded-lg transition-all duration-200 ${
+                    activeSeoTab === 'Identificação' 
+                      ? 'bg-gray-100 text-gray-900 border border-gray-200' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-[18px]">info</span>
+                  Identificação
+                </button>
+                <button
+                  onClick={() => setActiveSeoTab('Público-Alvo')}
+                  className={`flex items-center gap-2 px-4 py-2 text-[14px] font-medium rounded-lg transition-all duration-200 ${
+                    activeSeoTab === 'Público-Alvo' 
+                      ? 'bg-gray-100 text-gray-900 border border-gray-200' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-[18px]">group</span>
+                  Público-Alvo
+                </button>
+                <button
+                  onClick={() => setActiveSeoTab('Palavras-Chave')}
+                  className={`flex items-center gap-2 px-4 py-2 text-[14px] font-medium rounded-lg transition-all duration-200 ${
+                    activeSeoTab === 'Palavras-Chave' 
+                      ? 'bg-gray-100 text-gray-900 border border-gray-200' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-[18px]">search</span>
+                  Palavras-Chave
+                </button>
+                <button
+                  onClick={() => setActiveSeoTab('Tags Meta')}
+                  className={`flex items-center gap-2 px-4 py-2 text-[14px] font-medium rounded-lg transition-all duration-200 ${
+                    activeSeoTab === 'Tags Meta' 
+                      ? 'bg-gray-100 text-gray-900 border border-gray-200' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-[18px]">tag</span>
+                  Tags Meta
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-8 py-6 rounded-b-xl">
+              <div className="space-y-6">
+                
+                {/* Aba Identificação */}
+                {activeSeoTab === 'Identificação' && (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-12 gap-x-6 gap-y-5">
+                      {/* Nome do produto */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Nome do produto
+                        </label>
+                        <input
+                          type="text"
+                          placeholder='Ex: "Fone de Ouvido Bluetooth X"'
+                          defaultValue={selectedProductForSeo?.nome}
+                          className="w-full h-10 px-3 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      {/* Descrição breve */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Descrição breve
+                        </label>
+                        <textarea
+                          placeholder="Resuma em 1-2 frases: características únicas, preço aproximado e público-alvo"
+                          defaultValue={selectedProductForSeo?.descricao}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      {/* Diferenciais do produto */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Diferenciais do produto
+                        </label>
+                        <textarea
+                          placeholder="Descreva os principais diferenciais e características únicas que destacam este produto da concorrência..."
+                          rows={6}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Aba Público-Alvo */}
+                {activeSeoTab === 'Público-Alvo' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-12 gap-x-6 gap-y-6">
+                      
+                      {/* Tags de Faixa Etária */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-3">
+                          Faixa Etária
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {predefinedAgeTags.map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => selectAgeTag(tag)}
+                              className={`px-3 py-1.5 text-[13px] font-medium rounded-lg border transition-all duration-200 ${
+                                selectedAgeTag === tag
+                                  ? 'bg-blue-100 text-blue-800 border-blue-300 shadow-sm'
+                                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                          
+                          {/* Botão + para adicionar nova tag */}
+                          {!showAddAgeTag ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowAddAgeTag(true)}
+                              className="px-3 py-1.5 text-[13px] font-medium rounded-lg border border-dashed border-gray-400 text-gray-500 hover:border-gray-600 hover:text-gray-700 transition-all duration-200"
+                            >
+                              + Adicionar
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={newAgeTag}
+                                onChange={(e) => setNewAgeTag(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') addNewAgeTag();
+                                  if (e.key === 'Escape') { setShowAddAgeTag(false); setNewAgeTag(''); }
+                                }}
+                                placeholder="Nova faixa etária..."
+                                className="px-3 py-1.5 text-[13px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={addNewAgeTag}
+                                className="px-2 py-1.5 text-[13px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setShowAddAgeTag(false); setNewAgeTag(''); }}
+                                className="px-2 py-1.5 text-[13px] bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Tags de Renda */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-3">
+                          Perfil Socioeconômico
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {predefinedIncomeTags.map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => selectIncomeTag(tag)}
+                              className={`px-3 py-1.5 text-[13px] font-medium rounded-lg border transition-all duration-200 ${
+                                selectedIncomeTag === tag
+                                  ? 'bg-green-100 text-green-800 border-green-300 shadow-sm'
+                                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                          
+                          {/* Botão + para adicionar nova tag */}
+                          {!showAddIncomeTag ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowAddIncomeTag(true)}
+                              className="px-3 py-1.5 text-[13px] font-medium rounded-lg border border-dashed border-gray-400 text-gray-500 hover:border-gray-600 hover:text-gray-700 transition-all duration-200"
+                            >
+                              + Adicionar
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={newIncomeTag}
+                                onChange={(e) => setNewIncomeTag(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') addNewIncomeTag();
+                                  if (e.key === 'Escape') { setShowAddIncomeTag(false); setNewIncomeTag(''); }
+                                }}
+                                placeholder="Nova classe/renda..."
+                                className="px-3 py-1.5 text-[13px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={addNewIncomeTag}
+                                className="px-2 py-1.5 text-[13px] bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setShowAddIncomeTag(false); setNewIncomeTag(''); }}
+                                className="px-2 py-1.5 text-[13px] bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Tags de Interesse */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-3">
+                          Interesses e Comportamento
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {predefinedInterestTags.map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => selectInterestTag(tag)}
+                              className={`px-3 py-1.5 text-[13px] font-medium rounded-lg border transition-all duration-200 ${
+                                selectedInterestTag === tag
+                                  ? 'bg-purple-100 text-purple-800 border-purple-300 shadow-sm'
+                                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                          
+                          {/* Botão + para adicionar nova tag */}
+                          {!showAddInterestTag ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowAddInterestTag(true)}
+                              className="px-3 py-1.5 text-[13px] font-medium rounded-lg border border-dashed border-gray-400 text-gray-500 hover:border-gray-600 hover:text-gray-700 transition-all duration-200"
+                            >
+                              + Adicionar
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={newInterestTag}
+                                onChange={(e) => setNewInterestTag(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') addNewInterestTag();
+                                  if (e.key === 'Escape') { setShowAddInterestTag(false); setNewInterestTag(''); }
+                                }}
+                                placeholder="Novo interesse..."
+                                className="px-3 py-1.5 text-[13px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={addNewInterestTag}
+                                className="px-2 py-1.5 text-[13px] bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setShowAddInterestTag(false); setNewInterestTag(''); }}
+                                className="px-2 py-1.5 text-[13px] bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Tags de Intenção de Compra */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-3">
+                          Intenção de Compra
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {predefinedIntentionTags.map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => selectIntentionTag(tag)}
+                              className={`px-3 py-1.5 text-[13px] font-medium rounded-lg border transition-all duration-200 ${
+                                selectedIntentionTag === tag
+                                  ? 'bg-orange-100 text-orange-800 border-orange-300 shadow-sm'
+                                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                          
+                          {/* Botão + para adicionar nova tag */}
+                          {!showAddIntentionTag ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowAddIntentionTag(true)}
+                              className="px-3 py-1.5 text-[13px] font-medium rounded-lg border border-dashed border-gray-400 text-gray-500 hover:border-gray-600 hover:text-gray-700 transition-all duration-200"
+                            >
+                              + Adicionar
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={newIntentionTag}
+                                onChange={(e) => setNewIntentionTag(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') addNewIntentionTag();
+                                  if (e.key === 'Escape') { setShowAddIntentionTag(false); setNewIntentionTag(''); }
+                                }}
+                                placeholder="Nova intenção..."
+                                className="px-3 py-1.5 text-[13px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={addNewIntentionTag}
+                                className="px-2 py-1.5 text-[13px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setShowAddIntentionTag(false); setNewIntentionTag(''); }}
+                                className="px-2 py-1.5 text-[13px] bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Comportamento de compra */}
+                      <div className="col-span-6">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Comportamento de compra
+                        </label>
+                        <textarea
+                          placeholder="Ex: Pesquisa muito antes de comprar, influenciado por reviews, compra online..."
+                          rows={4}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      {/* Dores e necessidades */}
+                      <div className="col-span-6">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Dores e necessidades
+                        </label>
+                        <textarea
+                          placeholder="Ex: Precisa de praticidade, busca qualidade, quer economizar espaço..."
+                          rows={4}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      {/* Canais preferidos */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Canais preferidos para descobrir produtos
+                        </label>
+                        <div className="grid grid-cols-4 gap-3">
+                          <label className="flex items-center gap-2">
+                            <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <span className="text-[13px] text-gray-700">Google</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <span className="text-[13px] text-gray-700">Instagram</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <span className="text-[13px] text-gray-700">Facebook</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <span className="text-[13px] text-gray-700">YouTube</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <span className="text-[13px] text-gray-700">Marketplace</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <span className="text-[13px] text-gray-700">Lojas físicas</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <span className="text-[13px] text-gray-700">Indicação</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <span className="text-[13px] text-gray-700">Blogs/Sites</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Aba Palavras-Chave */}
+                {activeSeoTab === 'Palavras-Chave' && (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-12 gap-x-6 gap-y-5">
+                      {/* Palavras-chave primárias */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Palavras-chave primárias (3-5 principais)
+                        </label>
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder='Ex: "fone bluetooth", "headphone sem fio"'
+                            className="w-full h-10 px-3 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Palavra-chave 2"
+                            className="w-full h-10 px-3 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Palavra-chave 3"
+                            className="w-full h-10 px-3 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Palavras-chave de cauda longa */}
+                      <div className="col-span-6">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Palavras-chave de cauda longa
+                        </label>
+                        <textarea
+                          placeholder='Ex: "melhor fone bluetooth para exercícios", "fone sem fio com cancelamento de ruído barato"'
+                          rows={6}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      {/* Termos relacionados */}
+                      <div className="col-span-6">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Termos relacionados
+                        </label>
+                        <textarea
+                          placeholder='Ex: "wireless", "bluetooth 5.0", "cancelamento ativo de ruído", "graves potentes"'
+                          rows={6}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      {/* Volume e sazonalidade */}
+                      <div className="col-span-6">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Volume de busca esperado
+                        </label>
+                        <select className="w-full h-10 px-3 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500">
+                          <option value="">Selecione</option>
+                          <option value="baixo">Baixo (0-1k buscas/mês)</option>
+                          <option value="medio">Médio (1k-10k buscas/mês)</option>
+                          <option value="alto">Alto (10k+ buscas/mês)</option>
+                        </select>
+                      </div>
+                      
+                      <div className="col-span-6">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Sazonalidade
+                        </label>
+                        <textarea
+                          placeholder='Ex: "Picos em dezembro (natal), maio (dia das mães), março (volta às aulas)"'
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Aba Tags Meta */}
+                {activeSeoTab === 'Tags Meta' && (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-12 gap-x-6 gap-y-5">
+                      {/* Title Tag */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Title Tag <span className="text-gray-500">(50-60 caracteres)</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder='Ex: "Fone Bluetooth X - Som Premium com Cancelamento de Ruído"'
+                          className="w-full h-10 px-3 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <div className="text-[12px] text-gray-500 mt-1">0/60 caracteres</div>
+                      </div>
+                      
+                      {/* Meta Description */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Meta Description <span className="text-gray-500">(150-160 caracteres)</span>
+                        </label>
+                        <textarea
+                          placeholder='Ex: "Descubra o Fone Bluetooth X com som de alta qualidade, cancelamento ativo de ruído e 30h de bateria. Perfeito para trabalho e lazer. Compre agora!"'
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <div className="text-[12px] text-gray-500 mt-1">0/160 caracteres</div>
+                      </div>
+                      
+                      {/* Meta Keywords */}
+                      <div className="col-span-6">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Meta Keywords
+                        </label>
+                        <textarea
+                          placeholder='Ex: "fone bluetooth, headphone sem fio, cancelamento ruído, som premium"'
+                          rows={4}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      {/* Open Graph */}
+                      <div className="col-span-6">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Open Graph Title
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Título para redes sociais"
+                          className="w-full h-10 px-3 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+                        />
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Open Graph Description
+                        </label>
+                        <textarea
+                          placeholder="Descrição para compartilhamento em redes sociais"
+                          rows={2}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      {/* Schema.org */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          Schema.org - Dados Estruturados
+                        </label>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-[12px] text-gray-600 mb-1">Tipo de produto</label>
+                            <select className="w-full h-10 px-3 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500">
+                              <option value="">Selecione</option>
+                              <option value="Product">Produto</option>
+                              <option value="Offer">Oferta</option>
+                              <option value="Review">Avaliação</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[12px] text-gray-600 mb-1">Marca</label>
+                            <input
+                              type="text"
+                              placeholder="Nome da marca"
+                              className="w-full h-10 px-3 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[12px] text-gray-600 mb-1">Categoria</label>
+                            <input
+                              type="text"
+                              placeholder="Ex: Eletrônicos > Audio"
+                              className="w-full h-10 px-3 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* URL amigável */}
+                      <div className="col-span-12">
+                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                          URL amigável (slug)
+                        </label>
+                        <div className="flex items-center">
+                          <span className="text-gray-500 text-[14px]">metalon.com.br/produtos/</span>
+                          <input
+                            type="text"
+                            placeholder="fone-bluetooth-x-premium"
+                            className="flex-1 h-10 px-3 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Botões de ação */}
+              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
+                <button
+                  onClick={() => setSeoModalOpen(false)}
+                  className="px-6 py-2 text-[14px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button className="px-6 py-2 text-[14px] font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors">
+                  Salvar SEO
+                </button>
+              </div>
             </div>
           </div>
         </div>
